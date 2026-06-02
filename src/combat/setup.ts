@@ -21,6 +21,7 @@ import { AIController } from '../components/AIController.js';
 import { BodyPart, PlayerBodyPart } from '../components/PlayerBodyPart.js';
 import { AI, ARENA_GAP, BODY_IK, COMBAT, PALETTE } from '../config.js';
 import { makeGlass, neonEdges } from '../materials/glass.js';
+import { glowSprite } from '../materials/glow.js';
 
 export function setupCombatants(world: World): void {
   // --- Player combatant: shared Health pool (no geometry) ---
@@ -70,6 +71,12 @@ function buildOpponentBody(): Group {
   const head = new Mesh(headGeo, makeGlass({ color: PALETTE.violet, emissive: PALETTE.violet, emissiveIntensity: 0.8 }));
   head.position.set(0, 0.42, 0);
   group.add(head);
+
+  // Soft aura so the duelist reads as a glowing glass figure.
+  group.add(glowSprite(PALETTE.magenta, 1.1, 0.4));
+  const headGlow = glowSprite(PALETTE.violet, 0.5, 0.5);
+  headGlow.position.set(0, 0.42, 0);
+  group.add(headGlow);
 
   return group;
 }

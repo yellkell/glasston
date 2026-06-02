@@ -21,6 +21,7 @@ import {
 import type { World } from '@iwsdk/core';
 import { ARENA_GAP, OCTAGON_HALF_WIDTH, OCTAGON_VERTICES, PALETTE } from '../config.js';
 import { makeGlass, withNeonEdges } from '../materials/glass.js';
+import { registerPulse } from '../materials/pulse.js';
 import { octagonSlab } from './octagon.js';
 
 /** One octagonal platform: floor slab + curved front rail. */
@@ -34,10 +35,9 @@ function makePlatform(neon: number): Group {
 
   // Curved front rail the player leans over (a partial torus arc across the front).
   const railGeo = new TorusGeometry(OCTAGON_HALF_WIDTH * 0.95, 0.035, 16, 48, Math.PI);
-  const rail = new Mesh(
-    railGeo,
-    new MeshStandardMaterial({ color: new Color(neon), emissive: new Color(neon), emissiveIntensity: 2 }),
-  );
+  const railMat = new MeshStandardMaterial({ color: new Color(neon), emissive: new Color(neon), emissiveIntensity: 2 });
+  registerPulse(railMat, { amp: 0.5, speed: 1.3 });
+  const rail = new Mesh(railGeo, railMat);
   rail.rotation.x = Math.PI / 2;
   rail.position.set(0, 0.95, -0.45);
   platform.add(rail);
@@ -47,7 +47,7 @@ function makePlatform(neon: number): Group {
 
 export function buildArena(world: World): Object3D {
   const scene = world.scene;
-  scene.background = new Color(PALETTE.background);
+  // Background comes from the gradient dome (see setupEnvironment), not a flat fill.
 
   const arena = new Group();
   arena.name = 'arena';

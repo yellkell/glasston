@@ -11,8 +11,10 @@
 
 import { SessionMode, World } from '@iwsdk/core';
 import { buildArena } from './arena/arena.js';
+import { setupEnvironment } from './arena/environment.js';
 import { setupCombatants } from './combat/setup.js';
 import { setupPedestals } from './weapons/setup.js';
+import { FXSystem } from './systems/FXSystem.js';
 import { ProjectileSystem } from './systems/ProjectileSystem.js';
 import { GrabSystem } from './systems/GrabSystem.js';
 import { WeaponSystem } from './systems/WeaponSystem.js';
@@ -38,10 +40,13 @@ World.create(container, {
     spatialUI: true,
   },
   render: {
-    defaultLighting: true, // gives glass an environment to refract; tuned dark in arena
+    // We supply our own dark-neon IBL + dome (see setupEnvironment), so the
+    // default bright gradient is off.
+    defaultLighting: false,
     camera: { position: [0, 1.6, 0] },
   },
 }).then((world) => {
+  setupEnvironment(world);
   buildArena(world);
   setupCombatants(world);
   setupPedestals(world);
@@ -58,7 +63,9 @@ World.create(container, {
   world.registerSystem(ProjectileSystem);
   world.registerSystem(CollisionSystem);
   world.registerSystem(GameStateSystem);
+  // Phase 6 — animate transient FX and the ambient emissive pulse.
+  world.registerSystem(FXSystem);
 
   // eslint-disable-next-line no-console
-  console.info('[Glasston] World ready — Phase 5 AI duel, rounds & scoring online.');
+  console.info('[Glasston] World ready — Phase 6 styling, FX & glass polish online.');
 });

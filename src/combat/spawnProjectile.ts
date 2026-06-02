@@ -1,9 +1,14 @@
 /**
  * Shared glass-orb projectile spawner. Both the player's weapon and the
- * scripted/AI opponents fire through this so behaviour stays consistent.
+ * opponent fire through this so behaviour and look stay consistent.
+ *
+ * Each orb is a small emissive core + an additive glow halo + a crossed-quad
+ * motion trail (oriented to velocity by ProjectileSystem) — reads as a glowing
+ * blown-glass bullet.
  */
 
 import {
+  Group,
   Mesh,
   SphereGeometry,
   Vector3,
@@ -13,8 +18,8 @@ import {
 import { Projectile } from '../components/Projectile.js';
 import { Damaging } from '../components/Damaging.js';
 import { fakeGlass } from '../materials/glass.js';
+import { glowSprite, makeTrail } from '../materials/glow.js';
 
-// One shared unit-ish geometry; per-orb radius is applied via mesh scale.
 const BASE_RADIUS = 0.045;
 const ORB_GEO = new SphereGeometry(BASE_RADIUS, 16, 16);
 
@@ -35,10 +40,16 @@ export function spawnProjectile(world: World, opts: SpawnProjectileOptions): Ent
   const radius = opts.radius ?? BASE_RADIUS;
   _dir.copy(opts.direction).normalize();
 
+  const group = new Group();
+
   const orb = new Mesh(ORB_GEO, fakeGlass({ color: opts.color, emissive: opts.color, emissiveIntensity: 3 }));
   orb.scale.setScalar(radius / BASE_RADIUS);
+  group.add(orb);
 
-  const entity = world.createTransformEntity(orb);
+  group.add(glowSprite(opts.color, radius * 6, 0.9));
+  group.add(makeTrail(opts.color, radius * 9, radius * 2.2));
+
+  const entity = world.createTransformEntity(group);
   entity.object3D!.position.copy(opts.position);
   entity.addComponent(Projectile, {
     velocity: [_dir.x * opts.speed, _dir.y * opts.speed, _dir.z * opts.speed],

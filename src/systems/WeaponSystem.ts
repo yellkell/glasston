@@ -12,6 +12,7 @@ import { Weapon } from '../components/Weapon.js';
 import { HeldBy } from '../components/HeldBy.js';
 import { Pedestal } from '../components/Pedestal.js';
 import { spawnProjectile } from '../combat/spawnProjectile.js';
+import { spawnMuzzleFlash } from '../fx/effects.js';
 import { getAmmoBadge, getArchetype } from '../weapons/archetypes.js';
 import { WEAPON } from '../config.js';
 
@@ -84,6 +85,8 @@ export class WeaponSystem extends createSystem({
         radius: arch.radius,
       });
     }
+
+    spawnMuzzleFlash(this.world, _muzzle, arch.color);
 
     const ammo = (weapon.getValue(Weapon, 'ammo') ?? 1) - 1;
     weapon.setValue(Weapon, 'ammo', ammo);

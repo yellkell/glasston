@@ -21,7 +21,9 @@ See [`PLAN.md`](./PLAN.md) for the full design and phased build plan.
   off the rim pedestals — one per hand — with ammo, cooldowns, and auto-respawn.
 - ✅ **Phase 5 — The duel:** an AI opponent that strafes, dodges and shoots, plus full
   round/score/win-lose flow and a world-space HUD.
-- 🚧 **Next — Phase 6:** juice & polish (FX, spatial audio, glassmorphic HUD, perf).
+- ✅ **Phase 6 — Styling & juice:** dark-neon IBL + filmic tone mapping, iridescent glass,
+  additive glow/bloom & projectile trails, impact-shatter + muzzle FX, neon floor grid &
+  spotlight cones, ambient emissive pulse, and a glassmorphic HUD.
 
 ## Quick start
 

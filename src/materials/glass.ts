@@ -31,6 +31,10 @@ export interface GlassOptions {
   /** Refraction thickness in metres. */
   thickness?: number;
   ior?: number;
+  /** Thin-film iridescent shimmer (0..1) — the premium glassmorphic sheen. */
+  iridescence?: number;
+  /** How strongly the IBL environment shows in reflections. */
+  envMapIntensity?: number;
   /** Render both faces (needed for thin/hollow glass shells). */
   doubleSide?: boolean;
 }
@@ -45,6 +49,8 @@ export function makeGlass(opts: GlassOptions = {}): MeshPhysicalMaterial {
     transmission = 0.95,
     thickness = 0.5,
     ior = 1.4,
+    iridescence = 0.6,
+    envMapIntensity = 1.4,
     doubleSide = false,
   } = opts;
 
@@ -57,8 +63,12 @@ export function makeGlass(opts: GlassOptions = {}): MeshPhysicalMaterial {
     transmission,
     thickness,
     ior,
+    iridescence,
+    iridescenceIOR: 1.3,
     clearcoat: 1,
-    clearcoatRoughness: 0.1,
+    clearcoatRoughness: 0.08,
+    specularIntensity: 1,
+    envMapIntensity,
     attenuationColor: new Color(color),
     attenuationDistance: 1.5,
     transparent: true,

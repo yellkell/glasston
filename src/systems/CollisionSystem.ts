@@ -13,6 +13,8 @@ import { Projectile } from '../components/Projectile.js';
 import { Damaging } from '../components/Damaging.js';
 import { Hitbox } from '../components/Hitbox.js';
 import { Health } from '../components/Health.js';
+import { spawnImpact } from '../fx/effects.js';
+import { PALETTE } from '../config.js';
 
 const _projPos = new Vector3();
 const _targetPos = new Vector3();
@@ -48,6 +50,7 @@ export class CollisionSystem extends createSystem({
         if (_projPos.distanceToSquared(_targetPos) <= reach * reach) {
           const combatant = (hitbox.getValue(Hitbox, 'owner') as Entity | null) ?? hitbox;
           this.applyDamage(combatant, damage);
+          spawnImpact(this.world, _projPos, owner === 0 ? PALETTE.cyan : PALETTE.magenta);
           proj.destroy();
           break; // projectile is spent
         }

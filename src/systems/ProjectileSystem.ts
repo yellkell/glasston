@@ -6,8 +6,10 @@
  * data is queryable (collision uses it in Phase 3).
  */
 
-import { createSystem } from '@iwsdk/core';
+import { createSystem, Vector3 } from '@iwsdk/core';
 import { Projectile } from '../components/Projectile.js';
+
+const _ahead = new Vector3();
 
 export class ProjectileSystem extends createSystem({
   projectiles: { required: [Projectile] },
@@ -23,6 +25,10 @@ export class ProjectileSystem extends createSystem({
       obj.position.x += v[0] * delta;
       obj.position.y += v[1] * delta;
       obj.position.z += v[2] * delta;
+
+      // Face travel direction (local -Z) so the +Z crossed-quad trail streams behind.
+      _ahead.set(obj.position.x + v[0], obj.position.y + v[1], obj.position.z + v[2]);
+      obj.lookAt(_ahead);
 
       const elapsed = (entity.getValue(Projectile, 'elapsed') ?? 0) + delta;
       const lifetime = entity.getValue(Projectile, 'lifetime') ?? 4;

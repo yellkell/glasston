@@ -275,10 +275,27 @@ Each phase ends in something runnable in the WebXR emulator and committed.
 - ✅ Verified: typecheck clean, `vite build` (520 modules), dev server clean.
 - **Exit criteria:** a full winnable/losable 1v1 round against the bot.
 
-### Phase 6 — Juice & polish _(ship quality)_
-- FX (trails, impact shatter, muzzle flash, bloom), spatial SFX, haptics on fire/hit.
-- Glassmorphic HUD: health, ammo, round/score on floating frosted panels.
-- Performance pass (transmission budget, draw calls, 72/90 Hz target).
+### Phase 6 — Juice & polish _(ship quality)_ — ✅ DONE (styling pass)
+- ✅ **Look foundation:** ACES filmic tone mapping + a custom **dark-neon IBL** (PMREM via
+  IWSDK's `IBLGradient`) so transmission glass refracts/reflects real coloured light, plus a
+  gradient sky **dome**.
+- ✅ **Glass upgrade:** iridescent thin-film sheen, env-map intensity, brighter clearcoat on
+  the hero glass material.
+- ✅ **Bloom-like glow without post-processing** (VR-safe): an additive glow toolkit —
+  radial halos on projectiles/pedestals/opponent/muzzles, and crossed-quad **motion trails**
+  on projectiles oriented to velocity.
+- ✅ **Impact & muzzle FX:** `Effect` component + `FXSystem` animate muzzle flashes and
+  impact bursts (shockwave ring + ballistic glass shards) that self-destruct.
+- ✅ **Ambient life:** emissive "breathing" pulse on rails + pedestal tops (pulse registry).
+- ✅ **Environment:** glowing neon floor grid + faux-volumetric spotlight cones.
+- ✅ **Glassmorphic HUD:** frosted, light-bordered panel with rounded gradient health bars,
+  score, round timer and styled status messages (high-res canvas).
+- ✅ Haptics on fire (added Phase 2/4).
+- ✅ Verified: typecheck clean, `vite build` (526 modules), dev server clean.
+- ⏳ Notes / remaining: spatial SFX (audio) and a measured on-device performance pass
+  (transmission-material budget for 72/90 Hz) need a real headset to tune; projectiles
+  already use the cheap fake-glass to keep high-count objects affordable. Visual fidelity
+  itself can only be judged in the emulator/headset (not possible in this headless env).
 - **Exit criteria:** feels like a polished glass-themed Blaston duel.
 
 ### Stretch goals

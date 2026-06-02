@@ -16,6 +16,7 @@ import {
   type Object3D,
 } from '@iwsdk/core';
 import { makeGlass, neonEdges } from '../materials/glass.js';
+import { glowSprite } from '../materials/glow.js';
 import { PALETTE } from '../config.js';
 
 export const WeaponType = {
@@ -116,6 +117,11 @@ export function buildWeaponMesh(arch: Archetype): Group {
   barrel.rotation.x = Math.PI / 2; // align cylinder axis to -Z
   barrel.position.set(0, 0.02, -0.04 - arch.barrelLen / 2);
   group.add(barrel);
+
+  // Muzzle glow at the barrel tip.
+  const muzzleGlow = glowSprite(arch.color, 0.12, 0.8);
+  muzzleGlow.position.set(0, 0.02, -0.04 - arch.barrelLen);
+  group.add(muzzleGlow);
 
   // Grip stub.
   const gripGeo = new BoxGeometry(0.035, 0.09, 0.045);
