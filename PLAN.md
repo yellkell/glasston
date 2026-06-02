@@ -191,15 +191,25 @@ glass + environment + bloom:
 
 Each phase ends in something runnable in the WebXR emulator and committed.
 
-### Phase 0 — Scaffold & boot _(foundation)_
-- `npm create @iwsdk@latest` into the repo; wire up Vite, TS, dev server.
-- Confirm an empty XR scene renders in the desktop emulator and on-device.
-- Commit the scaffold. **Exit criteria:** "Enter VR" works and shows an empty room.
+### Phase 0 — Scaffold & boot _(foundation)_ — ✅ DONE
+- ~~`npm create @iwsdk@latest`~~ — the scaffolder pulls templates from jsdelivr, which
+  this environment's network policy blocks (403). Wired the project up **manually** instead
+  against the published `@iwsdk/core@0.4.2` + `three@0.184.0` from the npm registry (which
+  is reachable), plus `@iwsdk/vite-plugin-dev` for the desktop XR emulator.
+- Vite + TS + `World.create()` boot with an immersive-vr session offer.
+- **Verified:** `npm run typecheck` clean, `vite build` succeeds (495 modules), dev server
+  serves & transforms `main.ts` with no errors. (On-device "Enter VR" needs a real headset
+  to confirm visually — not possible in this headless CI environment.)
 
-### Phase 1 — Arena & glass foundation _(look + space)_
-- Build the octagon play space (exact dims, Section 4a), curved front rail, opponent
-  octagon, dark neon lighting + spotlights; load HDRI environment.
-- Author the reusable glass material(s) + `GlassStyle` component.
+### Phase 1 — Arena & glass foundation _(look + space)_ — 🚧 IN PROGRESS
+- ✅ Octagon play space (exact dims, Section 4a) as an extruded glass slab, curved front
+  rail, opponent octagon across the gap, dark neon lighting (magenta/cyan spotlights).
+- ✅ Reusable glass material factory (`src/materials/glass.ts`): frosted transmission glass,
+  a cheap fake-glass fallback, and neon edge outlines.
+- ✅ Weapon pedestals placed around the rim (never directly front/back) as glowing hex-top
+  placeholders.
+- ⏳ Remaining: HDRI/room environment map for richer refraction; `GlassStyle` ECS component
+  once materials are data-driven; tune the dark-vs-default-lighting balance.
 - **Exit criteria:** you can stand in your octagon in VR and the world reads as
   glassmorphic-neon.
 
