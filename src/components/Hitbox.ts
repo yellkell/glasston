@@ -1,7 +1,8 @@
 /**
- * A spherical hit volume on a combatant. `team` decides what can hurt it:
- * a projectile only damages entities whose team differs from the shooter's owner
- * (0 = player side, 1 = opponent side).
+ * A spherical hit volume. `team` decides what can hurt it: a projectile only
+ * damages hitboxes whose team differs from the shooter's owner (0 = player side,
+ * 1 = opponent side). `owner` points at the entity that holds the shared `Health`
+ * — so a multi-sphere body (head/chest/pelvis) all drains one health pool.
  */
 
 import { createComponent, Types } from '@iwsdk/core';
@@ -11,6 +12,8 @@ export const Hitbox = createComponent(
   {
     radius: { type: Types.Float32, default: 0.25 },
     team: { type: Types.Int32, default: 0 },
+    /** Entity carrying the Health this hitbox belongs to. */
+    owner: { type: Types.Entity, default: null },
   },
   'Spherical hit volume for collision.',
 );

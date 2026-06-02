@@ -2,9 +2,10 @@
  * Sphere-vs-sphere collision between projectiles and combatant hitboxes.
  *
  * A projectile only damages a hitbox on the opposing team (so shots never hit
- * their own shooter). On a hit it applies damage, despawns the projectile, and
- * destroys the target when its health reaches zero (a stand-in "shatter" until
- * Phase 6 adds real FX).
+ * their own shooter). Damage is applied to the entity referenced by the hitbox's
+ * `owner` (its shared Health pool), so a multi-sphere IK body drains one pool.
+ * A combatant at 0 HP is destroyed (a stand-in "shatter" until Phase 6 FX) —
+ * except the player, whose game-over flow arrives in Phase 5.
  */
 
 import { createSystem, Vector3, type Entity } from '@iwsdk/core';
@@ -18,11 +19,11 @@ const _targetPos = new Vector3();
 
 export class CollisionSystem extends createSystem({
   projectiles: { required: [Projectile, Damaging] },
-  targets: { required: [Hitbox, Health] },
+  hitboxes: { required: [Hitbox] },
 }) {
   update(): void {
-    const targets = [...this.queries.targets.entities];
-    if (targets.length === 0) return;
+    const hitboxes = [...this.queries.hitboxes.entities];
+    if (hitboxes.length === 0) return;
 
     // Snapshot projectiles: a hit destroys the entity mid-loop.
     for (const proj of [...this.queries.projectiles.entities]) {
@@ -34,18 +35,19 @@ export class CollisionSystem extends createSystem({
       const projRadius = proj.getValue(Projectile, 'radius') ?? 0.045;
       const damage = proj.getValue(Damaging, 'damage') ?? 0;
 
-      for (const target of targets) {
-        const team = target.getValue(Hitbox, 'team') ?? 0;
+      for (const hitbox of hitboxes) {
+        const team = hitbox.getValue(Hitbox, 'team') ?? 0;
         if (team === owner) continue; // can't hit your own side
 
-        const targetObj = target.object3D;
-        if (!targetObj) continue;
-        targetObj.getWorldPosition(_targetPos);
+        const hbObj = hitbox.object3D;
+        if (!hbObj) continue;
+        hbObj.getWorldPosition(_targetPos);
 
-        const hitRadius = target.getValue(Hitbox, 'radius') ?? 0.25;
+        const hitRadius = hitbox.getValue(Hitbox, 'radius') ?? 0.25;
         const reach = projRadius + hitRadius;
         if (_projPos.distanceToSquared(_targetPos) <= reach * reach) {
-          this.applyDamage(target, damage);
+          const combatant = (hitbox.getValue(Hitbox, 'owner') as Entity | null) ?? hitbox;
+          this.applyDamage(combatant, team, damage);
           proj.destroy();
           break; // projectile is spent
         }
@@ -53,23 +55,22 @@ export class CollisionSystem extends createSystem({
     }
   }
 
-  private applyDamage(target: Entity, damage: number): void {
-    const current = target.getValue(Health, 'current') ?? 0;
+  private applyDamage(combatant: Entity, team: number, damage: number): void {
+    if (!combatant.active || !combatant.hasComponent(Health)) return;
+    const current = combatant.getValue(Health, 'current') ?? 0;
     const next = current - damage;
-    const team = target.getValue(Hitbox, 'team') ?? 0;
 
     if (next <= 0) {
-      target.setValue(Health, 'current', 0);
+      combatant.setValue(Health, 'current', 0);
       if (team === 0) {
         // Player is down — game-over flow arrives in Phase 5.
         // eslint-disable-next-line no-console
         console.info('[Glasston] Player down.');
       } else {
-        // Target shatters (placeholder: remove it; FX in Phase 6).
-        target.destroy();
+        combatant.destroy(); // target shatters (FX in Phase 6)
       }
     } else {
-      target.setValue(Health, 'current', next);
+      combatant.setValue(Health, 'current', next);
     }
   }
 }

@@ -69,9 +69,22 @@ export const PROJECTILE = {
 export const COMBAT = {
   playerHealth: 100,
   dummyHealth: 100,
-  /** Player body hitbox radius — roughly head+upper-torso, so leaning truly dodges. */
-  playerHitboxRadius: 0.22,
   dummyHitboxRadius: 0.32,
+};
+
+/**
+ * Head-driven IK body. The player's hitbox is not a single sphere — it is a spine
+ * solved each frame from the tracked head down to pinned hips, with three hitbox
+ * spheres along it. Leaning/ducking the head swings the torso, so dodging is a
+ * whole-body act. Radii in metres; `hipHeight` is the pinned pelvis height.
+ */
+export const BODY_IK = {
+  hipHeight: 0.95,
+  /** Fraction along hips→head where the chest sphere sits. */
+  chestAlong: 0.55,
+  headRadius: 0.13,
+  chestRadius: 0.2,
+  pelvisRadius: 0.17,
 };
 
 /**

@@ -16,6 +16,7 @@ import { ProjectileSystem } from './systems/ProjectileSystem.js';
 import { WeaponFireSystem } from './systems/WeaponFireSystem.js';
 import { CollisionSystem } from './systems/CollisionSystem.js';
 import { ScriptedShooterSystem } from './systems/ScriptedShooterSystem.js';
+import { PlayerBodySystem } from './systems/PlayerBodySystem.js';
 
 const container = document.getElementById('scene-container') as HTMLDivElement;
 
@@ -40,6 +41,8 @@ World.create(container, {
   buildArena(world);
   setupCombatants(world);
 
+  // Phase 3b — solve the head-driven IK body first so hitboxes are current.
+  world.registerSystem(PlayerBodySystem);
   // Phase 2 — shooting: triggers fire slow glass orbs; ProjectileSystem integrates them.
   world.registerSystem(WeaponFireSystem);
   world.registerSystem(ScriptedShooterSystem);
@@ -48,5 +51,5 @@ World.create(container, {
   world.registerSystem(CollisionSystem);
 
   // eslint-disable-next-line no-console
-  console.info('[Glasston] World ready — Phase 3 targets, collision & dodging online.');
+  console.info('[Glasston] World ready — Phase 3 targets, IK-body dodging & collision online.');
 });
