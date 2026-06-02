@@ -260,9 +260,19 @@ Each phase ends in something runnable in the WebXR emulator and committed.
 - ⏳ Deferred: **Shield** archetype (deploys a glass blocker the CollisionSystem stops shots
   against) — planned alongside Phase 6 polish.
 
-### Phase 5 — AI opponent _(the duel)_
-- `AIController` + `AISystem`: aim with error, fire on cadence, dodge on its pad.
-- Round flow, scoring, win/lose, restart in `GameStateSystem`.
+### Phase 5 — AI opponent _(the duel)_ — ✅ DONE
+- ✅ Glass AI opponent (`Combatant` team 1, `Health`, `Hitbox`, `AIController`): strafes its
+  pad, reactively dodges nearby player shots, faces the player, and fires inaccurate
+  (dodge-able) shots on a cadence (`AISystem`).
+- ✅ `GameStateSystem`: round timer, scoring, knockout/timeout win conditions, first-to-N
+  match win, and automatic round/match reset (heals both, recentres + re-arms the AI,
+  clears live projectiles).
+- ✅ `CollisionSystem` now clamps Health at 0 (no longer destroys combatants) so they
+  persist across rounds; knockouts are detected by GameState.
+- ✅ Shared `match` state singleton + a world-space HUD (health bars, score, round timer,
+  status messages) — functional now, glassmorphic styling in Phase 6.
+- ✅ Replaces the Phase-3 scripted shooter.
+- ✅ Verified: typecheck clean, `vite build` (520 modules), dev server clean.
 - **Exit criteria:** a full winnable/losable 1v1 round against the bot.
 
 ### Phase 6 — Juice & polish _(ship quality)_

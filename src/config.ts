@@ -111,6 +111,26 @@ export const WEAPON = {
   parkLift: 0.12,
 };
 
+/** AI opponent behaviour. */
+export const AI = {
+  bodyY: 1.4, // chest height of the opponent body
+  padHalfWidth: 0.7, // how far the opponent strafes left/right on its pad
+  moveSpeed: 1.6, // lateral m/s
+  fireInterval: 1.6, // seconds between shots
+  projectileSpeed: 3.6,
+  damage: 9,
+  aimError: 0.18, // metres of random aim scatter at the player
+  reactDistance: 1.6, // dodge when a player shot is within this range
+};
+
+/** Match / round flow. */
+export const MATCH = {
+  roundTime: 60, // seconds per round
+  winTarget: 3, // first to this many round wins takes the match
+  roundOverDelay: 3, // pause showing the round result
+  matchOverDelay: 6, // pause showing the match result before a full reset
+};
+
 /** Neon accent palette for the glassmorphic-cyberpunk look. */
 export const PALETTE = {
   background: 0x05060f,

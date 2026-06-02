@@ -1,27 +1,32 @@
 /**
- * Spawns the Phase-3 combatants:
- *  - a player "combatant" entity that holds the shared Health pool, plus three
- *    body-part hitbox entities (head/chest/pelvis) positioned each frame by the
- *    head-driven IK in `PlayerBodySystem`;
- *  - a destructible glass "dummy" target on the opponent platform to shoot.
+ * Spawns the combatants:
+ *  - the player "combatant" entity (shared Health) plus three head-driven IK
+ *    body-part hitboxes (see PlayerBodySystem);
+ *  - the AI opponent: a glass avatar on the far platform with Health, a Hitbox,
+ *    and an AIController that aims, fires and dodges (see AISystem).
  */
 
 import {
+  Group,
   IcosahedronGeometry,
   Mesh,
   Object3D,
+  SphereGeometry,
   type World,
 } from '@iwsdk/core';
 import { Health } from '../components/Health.js';
 import { Hitbox } from '../components/Hitbox.js';
+import { Combatant } from '../components/Combatant.js';
+import { AIController } from '../components/AIController.js';
 import { BodyPart, PlayerBodyPart } from '../components/PlayerBodyPart.js';
-import { ARENA_GAP, BODY_IK, COMBAT, PALETTE } from '../config.js';
+import { AI, ARENA_GAP, BODY_IK, COMBAT, PALETTE } from '../config.js';
 import { makeGlass, neonEdges } from '../materials/glass.js';
 
 export function setupCombatants(world: World): void {
-  // --- Player combatant: holds the shared Health pool (no geometry) ---
+  // --- Player combatant: shared Health pool (no geometry) ---
   const player = world.createTransformEntity(new Object3D(), { persistent: true });
   player.addComponent(Health, { current: COMBAT.playerHealth, max: COMBAT.playerHealth });
+  player.addComponent(Combatant, { team: 0 });
 
   // Three IK body-part hitboxes (invisible), all draining the player's Health.
   const parts: Array<[number, number]> = [
@@ -35,16 +40,36 @@ export function setupCombatants(world: World): void {
     seg.addComponent(PlayerBodyPart, { part });
   }
 
-  // --- Destructible glass dummy (team 1), owns its own Health ---
-  const gemGeo = new IcosahedronGeometry(COMBAT.dummyHitboxRadius, 0);
-  const gem = new Mesh(
-    gemGeo,
-    makeGlass({ color: PALETTE.magenta, emissive: PALETTE.magenta, emissiveIntensity: 0.6, thickness: 0.6 }),
-  );
-  gem.add(neonEdges(gemGeo, PALETTE.magenta));
+  // --- AI opponent: a glass avatar that moves, dodges and shoots ---
+  const opponent = world.createTransformEntity(buildOpponentBody(), { persistent: true });
+  opponent.object3D!.position.set(0, AI.bodyY, -ARENA_GAP);
+  opponent.addComponent(Health, { current: COMBAT.dummyHealth, max: COMBAT.dummyHealth });
+  opponent.addComponent(Combatant, { team: 1 });
+  opponent.addComponent(Hitbox, { radius: COMBAT.dummyHitboxRadius, team: 1, owner: opponent });
+  opponent.addComponent(AIController, {
+    fireTimer: AI.fireInterval,
+    moveTimer: 1,
+    targetX: 0,
+  });
+}
 
-  const dummy = world.createTransformEntity(gem);
-  dummy.object3D!.position.set(0, 1.4, -ARENA_GAP);
-  dummy.addComponent(Health, { current: COMBAT.dummyHealth, max: COMBAT.dummyHealth });
-  dummy.addComponent(Hitbox, { radius: COMBAT.dummyHitboxRadius, team: 1, owner: dummy });
+/** A simple glass duelist: faceted torso gem + a head orb. */
+function buildOpponentBody(): Group {
+  const group = new Group();
+  group.name = 'opponent';
+
+  const torsoGeo = new IcosahedronGeometry(COMBAT.dummyHitboxRadius, 0);
+  const torso = new Mesh(
+    torsoGeo,
+    makeGlass({ color: PALETTE.magenta, emissive: PALETTE.magenta, emissiveIntensity: 0.7, thickness: 0.6 }),
+  );
+  torso.add(neonEdges(torsoGeo, PALETTE.magenta));
+  group.add(torso);
+
+  const headGeo = new SphereGeometry(0.16, 20, 16);
+  const head = new Mesh(headGeo, makeGlass({ color: PALETTE.violet, emissive: PALETTE.violet, emissiveIntensity: 0.8 }));
+  head.position.set(0, 0.42, 0);
+  group.add(head);
+
+  return group;
 }

@@ -18,7 +18,8 @@ import { GrabSystem } from './systems/GrabSystem.js';
 import { WeaponSystem } from './systems/WeaponSystem.js';
 import { WeaponSpawnSystem } from './systems/WeaponSpawnSystem.js';
 import { CollisionSystem } from './systems/CollisionSystem.js';
-import { ScriptedShooterSystem } from './systems/ScriptedShooterSystem.js';
+import { AISystem } from './systems/AISystem.js';
+import { GameStateSystem } from './systems/GameStateSystem.js';
 import { PlayerBodySystem } from './systems/PlayerBodySystem.js';
 
 const container = document.getElementById('scene-container') as HTMLDivElement;
@@ -51,11 +52,13 @@ World.create(container, {
   world.registerSystem(WeaponSpawnSystem);
   world.registerSystem(GrabSystem);
   world.registerSystem(WeaponSystem);
-  // Phase 2/3 — placeholder opponent fire + projectile motion + collision (last).
-  world.registerSystem(ScriptedShooterSystem);
+  // Phase 5 — AI opponent drives the duel; GameState runs rounds/scoring/HUD.
+  world.registerSystem(AISystem);
+  // Projectile motion then collision (collision last so it sees final positions).
   world.registerSystem(ProjectileSystem);
   world.registerSystem(CollisionSystem);
+  world.registerSystem(GameStateSystem);
 
   // eslint-disable-next-line no-console
-  console.info('[Glasston] World ready — Phase 4 weapons, pedestals & dual-wield online.');
+  console.info('[Glasston] World ready — Phase 5 AI duel, rounds & scoring online.');
 });

@@ -4,8 +4,8 @@
  * A projectile only damages a hitbox on the opposing team (so shots never hit
  * their own shooter). Damage is applied to the entity referenced by the hitbox's
  * `owner` (its shared Health pool), so a multi-sphere IK body drains one pool.
- * A combatant at 0 HP is destroyed (a stand-in "shatter" until Phase 6 FX) —
- * except the player, whose game-over flow arrives in Phase 5.
+ * Health is clamped at 0; ending the round on a knockout is the GameStateSystem's
+ * job, so combatant entities persist across rounds.
  */
 
 import { createSystem, Vector3, type Entity } from '@iwsdk/core';
@@ -47,7 +47,7 @@ export class CollisionSystem extends createSystem({
         const reach = projRadius + hitRadius;
         if (_projPos.distanceToSquared(_targetPos) <= reach * reach) {
           const combatant = (hitbox.getValue(Hitbox, 'owner') as Entity | null) ?? hitbox;
-          this.applyDamage(combatant, team, damage);
+          this.applyDamage(combatant, damage);
           proj.destroy();
           break; // projectile is spent
         }
@@ -55,22 +55,9 @@ export class CollisionSystem extends createSystem({
     }
   }
 
-  private applyDamage(combatant: Entity, team: number, damage: number): void {
+  private applyDamage(combatant: Entity, damage: number): void {
     if (!combatant.active || !combatant.hasComponent(Health)) return;
-    const current = combatant.getValue(Health, 'current') ?? 0;
-    const next = current - damage;
-
-    if (next <= 0) {
-      combatant.setValue(Health, 'current', 0);
-      if (team === 0) {
-        // Player is down — game-over flow arrives in Phase 5.
-        // eslint-disable-next-line no-console
-        console.info('[Glasston] Player down.');
-      } else {
-        combatant.destroy(); // target shatters (FX in Phase 6)
-      }
-    } else {
-      combatant.setValue(Health, 'current', next);
-    }
+    const next = (combatant.getValue(Health, 'current') ?? 0) - damage;
+    combatant.setValue(Health, 'current', Math.max(0, next));
   }
 }

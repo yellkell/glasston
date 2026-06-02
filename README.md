@@ -19,7 +19,9 @@ See [`PLAN.md`](./PLAN.md) for the full design and phased build plan.
   glass dummy, and a **head-driven IK body** so leaning/ducking your real body dodges shots.
 - ✅ **Phase 4 — Weapons, pedestals & dual-wield:** grab weapons (Pistol / Spread / Heavy)
   off the rim pedestals — one per hand — with ammo, cooldowns, and auto-respawn.
-- 🚧 **Next — Phase 5:** a real AI opponent + round/score flow.
+- ✅ **Phase 5 — The duel:** an AI opponent that strafes, dodges and shoots, plus full
+  round/score/win-lose flow and a world-space HUD.
+- 🚧 **Next — Phase 6:** juice & polish (FX, spatial audio, glassmorphic HUD, perf).
 
 ## Quick start
 
