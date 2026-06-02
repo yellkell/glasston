@@ -243,13 +243,22 @@ Each phase ends in something runnable in the WebXR emulator and committed.
   act, not just moving a single head sphere. Hitboxes route damage to a shared player
   `Health` via a `Hitbox.owner` entity reference.
 
-### Phase 4 — Weapons, pedestals & dual-wield _(variety)_
-- `Pedestal` slots around the rim, `Grabbable` + `GrabSystem` (per-hand), `HeldBy`,
-  `WeaponSpawnSystem`, `AmmoBadge`.
-- Implement 3–4 weapon archetypes (pistol, spread/shotgun, charge/heavy, shield deploy).
-- Per-weapon ammo, cooldown, and firing patterns; a weapon in each hand fires independently.
+### Phase 4 — Weapons, pedestals & dual-wield _(variety)_ — ✅ DONE
+- ✅ `Pedestal` entities at the rim slots, `Grabbable` + custom per-hand `GrabSystem`
+  (grip-squeeze to pick up, release to return to pedestal), `HeldBy`, `WeaponSpawnSystem`,
+  and a canvas-texture floating ammo badge on each weapon.
+- ✅ Three weapon archetypes (data-driven): **Pistol** (8, single), **Spread** (5, 5-pellet
+  cone), **Heavy** (3, big slow high-damage orb). Deployable **Shield** deferred (noted
+  below).
+- ✅ `WeaponSystem`: locks a held weapon to its hand's grip pose, ticks cooldown, fires the
+  archetype's pattern, decrements/updates ammo; a spent weapon dissolves and its pedestal
+  respawns a fresh random weapon after a delay.
+- ✅ A weapon in each hand fires independently (true dual-wield).
+- ✅ Verified: typecheck clean, `vite build` (515 modules), dev server clean.
 - **Exit criteria:** grab a weapon off a pedestal in each hand, fire both, run them dry,
   swap for freshly spawned ones.
+- ⏳ Deferred: **Shield** archetype (deploys a glass blocker the CollisionSystem stops shots
+  against) — planned alongside Phase 6 polish.
 
 ### Phase 5 — AI opponent _(the duel)_
 - `AIController` + `AISystem`: aim with error, fire on cadence, dodge on its pad.

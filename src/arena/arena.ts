@@ -1,16 +1,15 @@
 /**
  * Builds the static arena: two octagonal platforms facing each other across a
- * gap, a curved glass front rail, weapon pedestals around the player's rim, and
- * the dark neon lighting mood from the reference screenshots.
+ * gap, a curved glass front rail, and the dark neon lighting mood from the
+ * reference screenshots. Weapon pedestals are spawned separately as entities
+ * (see weapons/setup) since they carry gameplay state.
  *
- * For now these are plain Three.js objects parented under `world.scene` — they
- * are static set-dressing. Dynamic, interactive objects (weapons, projectiles)
- * become ECS entities in later phases.
+ * These are plain Three.js objects parented under `world.scene` — static
+ * set-dressing. Dynamic, interactive objects become ECS entities.
  */
 
 import {
   Color,
-  CylinderGeometry,
   Group,
   Mesh,
   MeshStandardMaterial,
@@ -20,41 +19,9 @@ import {
   type Object3D,
 } from 'three';
 import type { World } from '@iwsdk/core';
-import {
-  ARENA_GAP,
-  OCTAGON_HALF_WIDTH,
-  OCTAGON_VERTICES,
-  PALETTE,
-  PEDESTAL_SLOTS,
-} from '../config.js';
-import { makeGlass, neonEdges, withNeonEdges } from '../materials/glass.js';
+import { ARENA_GAP, OCTAGON_HALF_WIDTH, OCTAGON_VERTICES, PALETTE } from '../config.js';
+import { makeGlass, withNeonEdges } from '../materials/glass.js';
 import { octagonSlab } from './octagon.js';
-
-/** A glowing hexagonal weapon pedestal (placeholder until weapons exist). */
-function makePedestal(): Group {
-  const group = new Group();
-
-  // Glass plinth.
-  const plinthGeo = new CylinderGeometry(0.09, 0.12, 0.85, 6);
-  const plinth = new Mesh(plinthGeo, makeGlass({ color: PALETTE.glassTint, roughness: 0.15 }));
-  plinth.position.y = -0.425; // top of plinth sits at the slot's y
-  group.add(plinth);
-
-  // Emissive hex top where a weapon materialises.
-  const topGeo = new CylinderGeometry(0.13, 0.13, 0.04, 6);
-  const top = new Mesh(
-    topGeo,
-    new MeshStandardMaterial({
-      color: new Color(PALETTE.pedestal),
-      emissive: new Color(PALETTE.pedestal),
-      emissiveIntensity: 2.2,
-    }),
-  );
-  top.add(neonEdges(topGeo, 0xffd9a0));
-  group.add(top);
-
-  return group;
-}
 
 /** One octagonal platform: floor slab + curved front rail. */
 function makePlatform(neon: number): Group {
@@ -88,14 +55,6 @@ export function buildArena(world: World): Object3D {
   // Player platform at the origin (where the XR rig stands).
   const playerPlatform = makePlatform(PALETTE.cyan);
   arena.add(playerPlatform);
-
-  // Weapon pedestals around the player's rim (never directly front/back).
-  for (const slot of PEDESTAL_SLOTS) {
-    const pedestal = makePedestal();
-    pedestal.position.set(slot.position[0], slot.position[1], slot.position[2]);
-    pedestal.name = `pedestal:${slot.id}`;
-    arena.add(pedestal);
-  }
 
   // Opponent platform across the gap, facing back toward the player.
   const opponentPlatform = makePlatform(PALETTE.magenta);

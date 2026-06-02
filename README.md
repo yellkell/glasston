@@ -11,9 +11,15 @@ See [`PLAN.md`](./PLAN.md) for the full design and phased build plan.
 
 - ✅ **Phase 0 — Scaffold & boot:** IWSDK World + WebXR (immersive-vr) session, Vite/TS,
   in-browser XR emulator for desktop dev.
-- 🚧 **Phase 1 — Arena & glass foundation:** octagonal play space (exact Blaston
-  dimensions), curved front rail, weapon pedestals around the rim, opponent platform,
-  dark neon lighting + glassmorphic material factory.
+- ✅ **Phase 1 — Arena & glass foundation:** octagonal play space (exact Blaston
+  dimensions), curved front rail, opponent platform, dark neon lighting + glassmorphic
+  material factory.
+- ✅ **Phase 2 — Shooting core:** slow glass-orb projectiles fired from the controllers.
+- ✅ **Phase 3 — Targets, collision & dodging:** team-aware collision, a destructible
+  glass dummy, and a **head-driven IK body** so leaning/ducking your real body dodges shots.
+- ✅ **Phase 4 — Weapons, pedestals & dual-wield:** grab weapons (Pistol / Spread / Heavy)
+  off the rim pedestals — one per hand — with ammo, cooldowns, and auto-respawn.
+- 🚧 **Next — Phase 5:** a real AI opponent + round/score flow.
 
 ## Quick start
 

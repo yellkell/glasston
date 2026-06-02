@@ -12,8 +12,11 @@
 import { SessionMode, World } from '@iwsdk/core';
 import { buildArena } from './arena/arena.js';
 import { setupCombatants } from './combat/setup.js';
+import { setupPedestals } from './weapons/setup.js';
 import { ProjectileSystem } from './systems/ProjectileSystem.js';
-import { WeaponFireSystem } from './systems/WeaponFireSystem.js';
+import { GrabSystem } from './systems/GrabSystem.js';
+import { WeaponSystem } from './systems/WeaponSystem.js';
+import { WeaponSpawnSystem } from './systems/WeaponSpawnSystem.js';
 import { CollisionSystem } from './systems/CollisionSystem.js';
 import { ScriptedShooterSystem } from './systems/ScriptedShooterSystem.js';
 import { PlayerBodySystem } from './systems/PlayerBodySystem.js';
@@ -40,16 +43,19 @@ World.create(container, {
 }).then((world) => {
   buildArena(world);
   setupCombatants(world);
+  setupPedestals(world);
 
   // Phase 3b — solve the head-driven IK body first so hitboxes are current.
   world.registerSystem(PlayerBodySystem);
-  // Phase 2 — shooting: triggers fire slow glass orbs; ProjectileSystem integrates them.
-  world.registerSystem(WeaponFireSystem);
+  // Phase 4 — keep pedestals stocked, handle grabbing, drive held weapons.
+  world.registerSystem(WeaponSpawnSystem);
+  world.registerSystem(GrabSystem);
+  world.registerSystem(WeaponSystem);
+  // Phase 2/3 — placeholder opponent fire + projectile motion + collision (last).
   world.registerSystem(ScriptedShooterSystem);
   world.registerSystem(ProjectileSystem);
-  // Phase 3 — collision runs after motion so it tests the frame's final positions.
   world.registerSystem(CollisionSystem);
 
   // eslint-disable-next-line no-console
-  console.info('[Glasston] World ready — Phase 3 targets, IK-body dodging & collision online.');
+  console.info('[Glasston] World ready — Phase 4 weapons, pedestals & dual-wield online.');
 });

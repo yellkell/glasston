@@ -98,6 +98,19 @@ export const SCRIPTED_SHOOTER = {
   aimJitter: 0.12, // random aim error (metres at the target) so it's dodge-able
 };
 
+/** Grabbing & weapon-pedestal behaviour. */
+export const GRAB = {
+  /** How close a controller's grip must be to a parked weapon to grab it (m). */
+  radius: 0.24,
+};
+
+export const WEAPON = {
+  /** Seconds after a weapon is spent before its pedestal spawns a fresh one. */
+  respawnDelay: 1.5,
+  /** How high above the pedestal hex top a parked weapon floats (m). */
+  parkLift: 0.12,
+};
+
 /** Neon accent palette for the glassmorphic-cyberpunk look. */
 export const PALETTE = {
   background: 0x05060f,
