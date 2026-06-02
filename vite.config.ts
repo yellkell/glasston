@@ -5,6 +5,7 @@ import { iwsdkDev } from '@iwsdk/vite-plugin-dev';
 // flown in a desktop browser (WASD + mouse) without a headset. On a real
 // Quest browser it stays out of the way and the native WebXR session is used.
 export default defineConfig({
+  base: '/glasston/',
   plugins: [
     iwsdkDev({
       // Emulate a Quest 3 device profile during local development.
