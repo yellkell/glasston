@@ -35,9 +35,12 @@ orbs leaving refractive trails.
 | **Slow projectiles** | Shots travel slowly; you dodge with your body | Tunable projectile speed (~3–6 m/s); the heart of the feel |
 | **Body dodging** | Duck/lean/step to avoid shots | Use the headset pose as the player hitbox; no health regen from standing still |
 | **Weapon variety** | Pistols, shotguns, homing, mines, shields, etc. | Ship 3–4 archetypes for v1 (pistol, spread, charge/heavy, shield) |
-| **Weapon spawning** | Weapons materialize at your sides to be grabbed | Holster zones at the player's hips; grab to equip |
+| **Dual wielding** | A weapon in each hand, fired independently | Both grip spaces can hold a weapon; trigger per hand |
+| **Weapon spawning** | Weapons materialize at **fixed spots around your platform** | Pedestals with glowing hex tops spaced around the octagon rim — **never directly front or behind**; grab to equip, return to swap |
+| **Ammo readout** | Each weapon shows a **numeric ammo count** | Floating glass number badge on each weapon (the "2"/"7" in refs) |
 | **Rounds & ammo** | Limited ammo per weapon, swap constantly | Per-weapon ammo + cooldowns drive the swap rhythm |
-| **Arena duel** | Two pads facing each other | One player pad + one AI pad, fixed distance |
+| **Constrained dodge box** | You stay inside a small octagonal play space | Model the exact octagon (Section 4a); shots are dodged, not walked away from |
+| **Arena duel** | Two players facing each other across a barrier | Player octagon + AI octagon, fixed distance, curved front barrier |
 
 ---
 
@@ -61,6 +64,51 @@ orbs leaving refractive trails.
 
 ---
 
+## 4a. Arena & play-space layout (from reference)
+
+The player stands inside a **constrained octagonal play space** — this is the dodge box,
+and its small size is *the point*: you can't run from shots, only weave your body. Exact
+footprint from the reference diagram:
+
+```
+        0.75 m  (top edge)
+      ┌───────────┐
+   0.65│           │0.65   (diagonal corners)
+  ┌────┘           └────┐
+  │                     │
+1.5│      OCTAGON        │   ← 1.5 m deep (left edge span)
+  │   (player footprint) │
+  └────┐           ┌────┘
+   0.6 │           │ 0.6   (lower diagonals / side ≈ 0.6 m)
+      └───────────┘
+        1.72 m  (overall width)
+```
+
+- **Overall:** ~**1.72 m wide × 1.5 m deep** octagon. Top straight edge 0.75 m, upper
+  diagonals 0.65 m, side/lower segments ~0.6 m.
+- Build it as a flat octagon prism (the lit floor pad) + a low **curved front rail/barrier**
+  the player leans over, matching the screenshot.
+- **Weapon pedestals** sit at **predetermined slots spaced around the octagon's perimeter**
+  (on the side and diagonal edges) — **never directly in front of or behind** the player.
+  This forces you to reach out and turn to your sides to grab/swap weapons, which is part of
+  the body-movement skill. Each pedestal has a **glowing hex top** where a weapon
+  materializes. Plan ~4–6 fixed slots (e.g. front-left, front-right, mid-left, mid-right,
+  and possibly the two rear-diagonals), and the `WeaponSpawnSystem` cycles weapons through
+  them. The straight-ahead and dead-behind edges stay clear so they never block your aim
+  lane or sit out of reach.
+- The **AI opponent** stands on an identical octagon facing the player across a gap
+  (tune distance for projectile travel time — start ~4–6 m centre-to-centre).
+- **HUD anchors:** health bar + round timer float at the **top corners** of the arena
+  (per refs), as glass panels.
+
+### Scene graph anchoring
+- A root **`XROrigin` rig** positions the player octagon at world origin; the headset/hands
+  live under it. Pedestals, rail, and HUD anchors are children of the rig so they stay put
+  relative to the player regardless of recenters.
+- The opponent octagon + its props are a separate subtree facing back toward the player.
+
+---
+
 ## 4. Architecture (ECS)
 
 ECS data is authoritative; Three.js objects are views synced from `Transform`.
@@ -71,20 +119,25 @@ ECS data is authoritative; Three.js objects are views synced from `Transform`.
 - `Projectile` — `{ velocity, lifetime, elapsed, radius, ownerId }`.
 - `Damaging` — `{ damage }`.
 - `Weapon` — `{ type, ammo, maxAmmo, cooldown, cooldownRemaining, muzzleOffset }`.
-- `Grabbable` — marks weapons that can be picked up from a holster.
-- `Holster` — a spawn zone anchored to the player rig (left hip / right hip).
+- `AmmoBadge` — link to a floating glass number that renders the weapon's current ammo.
+- `Grabbable` — marks weapons that can be picked up from a pedestal.
+- `Pedestal` — a front-rail spawn slot (left/right) with a glowing hex top; holds one weapon.
+- `HeldBy` — `{ hand }` set when a weapon is attached to a grip space (left/right), enabling
+  independent dual-wield firing.
 - `Shield` — `{ hp }` deployable that absorbs incoming projectiles.
 - `Hitbox` — `{ radius }` (sphere) for cheap collision; attached to player head/torso & AI.
 - `AIController` — `{ state, aimError, fireTimer, dodgeTimer }` for the bot opponent.
-- `GlassStyle` — tag/params for the glassmorphic material variant (color, glow intensity).
+- `GlassStyle` — tag/params for the glass/neon material variant (tint, glow intensity).
 
 ### Systems (behavior, ordered by priority each frame)
 1. **InputSystem** — read controllers via `StatefulGamepad`; expose trigger/grip/buttons
    and grip-space poses for both hands.
-2. **GrabSystem** — when a grip is pressed near a `Grabbable` in a `Holster`, attach the
-   weapon to that hand's grip space; release to drop/return.
-3. **WeaponFireSystem** — on trigger press, if `ammo > 0` and `cooldownRemaining <= 0`,
-   spawn `Projectile` entities at the muzzle with the weapon's firing pattern.
+2. **GrabSystem** — when a grip is pressed near a `Grabbable` on a `Pedestal` (or a held
+   weapon), attach/detach it to that hand's grip space and set `HeldBy`; releasing over a
+   pedestal returns it. Supports a weapon in each hand.
+3. **WeaponFireSystem** — per held weapon, on that hand's trigger press, if `ammo > 0` and
+   `cooldownRemaining <= 0`, spawn `Projectile`(s) at the muzzle with the weapon's firing
+   pattern; decrement ammo and refresh its `AmmoBadge`.
 4. **ProjectileSystem** — integrate position by `velocity * dt`; expire on `lifetime`.
 5. **CollisionSystem** — sphere-vs-sphere between projectiles and `Hitbox`/`Shield`
    entities (skip `ownerId`); apply `Damaging`, destroy projectile, spawn hit FX.
@@ -92,13 +145,20 @@ ECS data is authoritative; Three.js objects are views synced from `Transform`.
    `aimError`, fire on a timer, and "dodge" by sidestepping its pad / lowering.
 7. **PlayerHitboxSystem** — sync the player `Hitbox` to the live headset pose so real body
    movement dodges shots.
-8. **WeaponSpawnSystem** — refill empty holsters with new weapons between/within rounds.
+8. **WeaponSpawnSystem** — materialize a new weapon on a `Pedestal` (with a glass/hex
+   spawn FX) whenever its slot is empty, between/within rounds.
 9. **GameStateSystem** — round flow, scoring, win/lose, restart.
 10. **FXSystem** — projectile trails, impact bursts, screen-flash on damage, audio cues.
 
 ---
 
 ## 5. The glassmorphic look — concrete recipe
+
+**Direction:** blend our frosted-glass glassmorphism with the reference's **neon-cyberpunk
+arena** — a dark room, vivid magenta/cyan rim light, spotlight cones, glowing edges and
+banners — but render the surfaces (pads, rail, pedestals, weapons, HUD) as translucent
+frosted glass with light borders, so colored light blooms *through* glass rather than off
+flat plastic. Dark environment + saturated emissive accents is the unifying mood.
 
 Glassmorphism in 3D ≠ CSS blur. We approximate the same *feeling* with physically-based
 glass + environment + bloom:
@@ -115,10 +175,12 @@ glass + environment + bloom:
   *behind* frosted surfaces so saturated color blooms through.
 - **Bloom post-process** for the glow on edges, projectiles, and muzzle flashes.
 - **Object styling pass:**
-  - Arena pads & boundary = large frosted-glass slabs with glowing edges.
-  - Weapons = translucent tinted glass shells with an emissive core.
+  - Octagon floor pad + curved front rail = large frosted-glass slabs with glowing neon edges.
+  - Weapon pedestals = glass plinths with an emissive **hex top** and a spawn-glow.
+  - Weapons = translucent tinted glass shells with an emissive core + floating ammo number.
   - Projectiles = blown-glass orbs (high transmission, emissive center) + refractive trail.
   - UI/HUD = floating frosted panels (IWSDK spatial UI) with blurred translucency.
+  - Mood = dark arena, magenta/cyan rim light, spotlight cones, glowing banners (per refs).
 - **Performance guardrails:** transmission is expensive. Cap the number of true-transmission
   materials on screen; use cheaper fake-glass (`MeshPhysicalMaterial` w/ opacity + fresnel,
   no transmission) for high-count objects like projectiles if FPS drops. Target 72/90 Hz.
@@ -135,9 +197,11 @@ Each phase ends in something runnable in the WebXR emulator and committed.
 - Commit the scaffold. **Exit criteria:** "Enter VR" works and shows an empty room.
 
 ### Phase 1 — Arena & glass foundation _(look + space)_
-- Build the two pads, boundary, and lighting; load HDRI environment.
+- Build the octagon play space (exact dims, Section 4a), curved front rail, opponent
+  octagon, dark neon lighting + spotlights; load HDRI environment.
 - Author the reusable glass material(s) + `GlassStyle` component.
-- **Exit criteria:** you can stand on your pad in VR and the world reads as glassmorphic.
+- **Exit criteria:** you can stand in your octagon in VR and the world reads as
+  glassmorphic-neon.
 
 ### Phase 2 — Shooting core _(the feel)_
 - `Projectile`, `ProjectileSystem`, a single pistol that fires on trigger.
@@ -150,11 +214,13 @@ Each phase ends in something runnable in the WebXR emulator and committed.
   scripted shooter).
 - **Exit criteria:** you can destroy a target and physically dodge an incoming shot.
 
-### Phase 4 — Weapons & holsters _(variety)_
-- `Holster` zones at the hips, `Grabbable` + `GrabSystem`, `WeaponSpawnSystem`.
+### Phase 4 — Weapons, pedestals & dual-wield _(variety)_
+- `Pedestal` slots around the rim, `Grabbable` + `GrabSystem` (per-hand), `HeldBy`,
+  `WeaponSpawnSystem`, `AmmoBadge`.
 - Implement 3–4 weapon archetypes (pistol, spread/shotgun, charge/heavy, shield deploy).
-- Per-weapon ammo, cooldown, and firing patterns.
-- **Exit criteria:** grab a weapon from your hip, fire it, run it dry, grab another.
+- Per-weapon ammo, cooldown, and firing patterns; a weapon in each hand fires independently.
+- **Exit criteria:** grab a weapon off a pedestal in each hand, fire both, run them dry,
+  swap for freshly spawned ones.
 
 ### Phase 5 — AI opponent _(the duel)_
 - `AIController` + `AISystem`: aim with error, fire on cadence, dodge on its pad.
