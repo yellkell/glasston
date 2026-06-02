@@ -62,6 +62,27 @@ export const PROJECTILE = {
   lifetime: 4.0, // seconds before a missed shot despawns
   radius: 0.045, // glass-orb radius (also the collision radius later)
   muzzleOffset: 0.08, // spawn this far ahead of the controller so it clears the hand
+  damage: 10, // damage a player shot deals on hit
+};
+
+/** Combat tuning: health pools and body-hitbox sizes (metres). */
+export const COMBAT = {
+  playerHealth: 100,
+  dummyHealth: 100,
+  /** Player body hitbox radius — roughly head+upper-torso, so leaning truly dodges. */
+  playerHitboxRadius: 0.22,
+  dummyHitboxRadius: 0.32,
+};
+
+/**
+ * Phase-3 scripted shooter: a placeholder opponent that lobs shots at the player
+ * so dodging can be tested. It is replaced by the real AI in Phase 5.
+ */
+export const SCRIPTED_SHOOTER = {
+  interval: 2.4, // seconds between shots
+  speed: 3.5, // slightly slower than your own shots → easy to read & dodge
+  damage: 8,
+  aimJitter: 0.12, // random aim error (metres at the target) so it's dodge-able
 };
 
 /** Neon accent palette for the glassmorphic-cyberpunk look. */

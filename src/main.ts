@@ -11,8 +11,11 @@
 
 import { SessionMode, World } from '@iwsdk/core';
 import { buildArena } from './arena/arena.js';
+import { setupCombatants } from './combat/setup.js';
 import { ProjectileSystem } from './systems/ProjectileSystem.js';
 import { WeaponFireSystem } from './systems/WeaponFireSystem.js';
+import { CollisionSystem } from './systems/CollisionSystem.js';
+import { ScriptedShooterSystem } from './systems/ScriptedShooterSystem.js';
 
 const container = document.getElementById('scene-container') as HTMLDivElement;
 
@@ -35,12 +38,15 @@ World.create(container, {
   },
 }).then((world) => {
   buildArena(world);
+  setupCombatants(world);
 
-  // Phase 2 — shooting core: pull a trigger to fire a slow glass orb from
-  // either hand; ProjectileSystem moves and expires them.
+  // Phase 2 — shooting: triggers fire slow glass orbs; ProjectileSystem integrates them.
   world.registerSystem(WeaponFireSystem);
+  world.registerSystem(ScriptedShooterSystem);
   world.registerSystem(ProjectileSystem);
+  // Phase 3 — collision runs after motion so it tests the frame's final positions.
+  world.registerSystem(CollisionSystem);
 
   // eslint-disable-next-line no-console
-  console.info('[Glasston] World ready — Phase 2 shooting core online.');
+  console.info('[Glasston] World ready — Phase 3 targets, collision & dodging online.');
 });

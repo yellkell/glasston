@@ -224,11 +224,24 @@ Each phase ends in something runnable in the WebXR emulator and committed.
   no errors. (Pulling a real trigger needs a headset/emulator session to confirm visually.)
 - **Exit criteria:** point a controller, pull trigger, watch a glass orb drift out slowly.
 
-### Phase 3 — Targets, collision & dodging _(the loop)_
-- `Hitbox`, `CollisionSystem`, `Health`; a static dummy that takes damage and shatters.
-- Player hitbox synced to headset pose → leaning/ducking avoids return fire (test with a
-  scripted shooter).
+### Phase 3 — Targets, collision & dodging _(the loop)_ — ✅ DONE
+- ✅ `Health`, `Hitbox`, `Damaging` components; `CollisionSystem` (sphere-vs-sphere,
+  team-aware so shots never hit their own side).
+- ✅ Destructible glass-gem dummy on the opponent platform (shatters at 0 HP).
+- ✅ Player body hitbox driven by **head-anchored inverse kinematics** (see Phase 3b).
+- ✅ `ScriptedShooterSystem`: a placeholder opponent that lobs slow, jittered shots at the
+  player so dodging can be tested (replaced by real AI in Phase 5).
+- ✅ Shared `spawnProjectile` helper used by both the player weapon and the shooter.
+- ✅ Verified: typecheck clean, `vite build` (505 modules), dev server clean.
 - **Exit criteria:** you can destroy a target and physically dodge an incoming shot.
+
+### Phase 3b — Head-driven IK body _(realistic dodge volume)_
+- The player's body is solved by a lightweight VR IK from the headset: hips are pinned at
+  the player's standing spot (rig XZ, ~0.95 m), the spine runs from hips to the tracked
+  head, and head/chest/pelvis hitbox spheres are placed along it each frame. Leaning or
+  ducking your real head therefore swings the torso volume — so dodging is a whole-body
+  act, not just moving a single head sphere. Hitboxes route damage to a shared player
+  `Health` via a `Hitbox.owner` entity reference.
 
 ### Phase 4 — Weapons, pedestals & dual-wield _(variety)_
 - `Pedestal` slots around the rim, `Grabbable` + `GrabSystem` (per-hand), `HeldBy`,
