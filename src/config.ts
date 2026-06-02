@@ -53,6 +53,17 @@ export const PEDESTAL_SLOTS: PedestalSlot[] = [
   { id: 'mid-right', position: [OCTAGON_HALF_WIDTH - 0.05, RAIL_Y, 0] },
 ];
 
+/**
+ * Projectile feel — the single most important tuning in the game. Blaston shots
+ * are SLOW enough to read and dodge with your body. Speed is in metres/second.
+ */
+export const PROJECTILE = {
+  speed: 4.0, // slow drift; raise for harder, lower for floatier
+  lifetime: 4.0, // seconds before a missed shot despawns
+  radius: 0.045, // glass-orb radius (also the collision radius later)
+  muzzleOffset: 0.08, // spawn this far ahead of the controller so it clears the hand
+};
+
 /** Neon accent palette for the glassmorphic-cyberpunk look. */
 export const PALETTE = {
   background: 0x05060f,

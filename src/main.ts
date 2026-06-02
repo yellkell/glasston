@@ -11,6 +11,8 @@
 
 import { SessionMode, World } from '@iwsdk/core';
 import { buildArena } from './arena/arena.js';
+import { ProjectileSystem } from './systems/ProjectileSystem.js';
+import { WeaponFireSystem } from './systems/WeaponFireSystem.js';
 
 const container = document.getElementById('scene-container') as HTMLDivElement;
 
@@ -33,6 +35,12 @@ World.create(container, {
   },
 }).then((world) => {
   buildArena(world);
+
+  // Phase 2 — shooting core: pull a trigger to fire a slow glass orb from
+  // either hand; ProjectileSystem moves and expires them.
+  world.registerSystem(WeaponFireSystem);
+  world.registerSystem(ProjectileSystem);
+
   // eslint-disable-next-line no-console
-  console.info('[Glasston] World ready — Phase 1 arena built.');
+  console.info('[Glasston] World ready — Phase 2 shooting core online.');
 });

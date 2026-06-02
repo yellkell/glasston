@@ -213,9 +213,15 @@ Each phase ends in something runnable in the WebXR emulator and committed.
 - **Exit criteria:** you can stand in your octagon in VR and the world reads as
   glassmorphic-neon.
 
-### Phase 2 — Shooting core _(the feel)_
-- `Projectile`, `ProjectileSystem`, a single pistol that fires on trigger.
-- Glass-orb projectile visuals + slow tunable speed.
+### Phase 2 — Shooting core _(the feel)_ — ✅ DONE
+- ✅ `Projectile` component + `ProjectileSystem` (constant-velocity integration, lifetime
+  despawn).
+- ✅ `WeaponFireSystem`: each hand's trigger (edge-triggered) fires from its aim ray;
+  dual-hand ready. Brief haptic pulse on fire.
+- ✅ Glass-orb projectile visuals (cheap fake-glass, emissive cyan) + slow tunable speed
+  (`PROJECTILE.speed`, default 4 m/s) in `config.ts`.
+- ✅ Verified: typecheck clean, `vite build` succeeds (498 modules), dev server serves with
+  no errors. (Pulling a real trigger needs a headset/emulator session to confirm visually.)
 - **Exit criteria:** point a controller, pull trigger, watch a glass orb drift out slowly.
 
 ### Phase 3 — Targets, collision & dodging _(the loop)_
