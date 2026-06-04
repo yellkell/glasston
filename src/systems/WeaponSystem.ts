@@ -10,12 +10,13 @@
 import { createSystem, Euler, InputComponent, Vector3 } from '@iwsdk/core';
 import { Weapon } from '../components/Weapon.js';
 import { HeldBy } from '../components/HeldBy.js';
+import { Dropped } from '../components/Dropped.js';
 import { Pedestal } from '../components/Pedestal.js';
 import { spawnProjectile } from '../combat/spawnProjectile.js';
-import { spawnMuzzleFlash } from '../fx/effects.js';
+import { spawnMuzzleFlash, spawnImpact } from '../fx/effects.js';
 import { getAmmoBadge, getArchetype } from '../weapons/archetypes.js';
 import { pulseGamepad } from '../input/haptics.js';
-import { WEAPON } from '../config.js';
+import { DROP, PALETTE, WEAPON } from '../config.js';
 
 const HANDS = ['left', 'right'] as const;
 const FORWARD = new Vector3(0, 0, -1);
@@ -34,6 +35,12 @@ export class WeaponSystem extends createSystem({
       const cd = Math.max(0, (weapon.getValue(Weapon, 'cooldownRemaining') ?? 0) - delta);
       weapon.setValue(Weapon, 'cooldownRemaining', cd);
 
+      // A let-go weapon falls and despawns when it lands.
+      if (weapon.hasComponent(Dropped)) {
+        this.updateDropped(weapon, delta);
+        continue;
+      }
+
       if (!weapon.hasComponent(HeldBy)) continue;
       const hand = HANDS[weapon.getValue(HeldBy, 'hand') ?? 1];
       this.followHand(weapon, hand);
@@ -51,13 +58,40 @@ export class WeaponSystem extends createSystem({
     }
   }
 
-  /** Lock the weapon to the hand's grip pose. */
+  /**
+   * Hold the weapon at the hand's grip position, but aim it along the hand's
+   * *ray* (pointing) direction so the barrel points FORWARD where you aim —
+   * the grip space's own forward axis points up out of the controller, which
+   * is why the gun used to point at the ceiling.
+   */
   private followHand(weapon: import('@iwsdk/core').Entity, hand: 'left' | 'right'): void {
-    const grip = this.world.playerSpaceEntities.gripSpaces[hand]?.object3D;
+    const spaces = this.world.playerSpaceEntities;
+    const grip = spaces.gripSpaces[hand]?.object3D;
     const obj = weapon.object3D;
     if (!grip || !obj) return;
+    const ray = spaces.raySpaces[hand]?.object3D ?? grip;
     grip.getWorldPosition(obj.position);
-    grip.getWorldQuaternion(obj.quaternion);
+    ray.getWorldQuaternion(obj.quaternion);
+  }
+
+  /** Apply gravity to a dropped weapon; despawn (with a poof) when it lands. */
+  private updateDropped(weapon: import('@iwsdk/core').Entity, delta: number): void {
+    const obj = weapon.object3D;
+    if (!obj) return;
+
+    const v = weapon.getVectorView(Dropped, 'velocity'); // Float32Array [x,y,z]
+    v[1] -= DROP.gravity * delta;
+    obj.position.x += v[0] * delta;
+    obj.position.y += v[1] * delta;
+    obj.position.z += v[2] * delta;
+    obj.rotateZ(DROP.spin * delta); // a little tumble
+
+    if (obj.position.y <= DROP.floorY) {
+      obj.position.y = DROP.floorY;
+      spawnImpact(this.world, obj.position.clone(), PALETTE.purple);
+      this.freePedestal(weapon.getValue(Weapon, 'homeSlot') ?? 0);
+      weapon.destroy();
+    }
   }
 
   private fire(
@@ -100,7 +134,12 @@ export class WeaponSystem extends createSystem({
 
   /** A spent weapon dissolves and frees its pedestal to respawn a fresh one. */
   private spend(weapon: import('@iwsdk/core').Entity): void {
-    const home = weapon.getValue(Weapon, 'homeSlot') ?? 0;
+    this.freePedestal(weapon.getValue(Weapon, 'homeSlot') ?? 0);
+    weapon.destroy();
+  }
+
+  /** Mark a pedestal empty so WeaponSpawnSystem restocks it after the delay. */
+  private freePedestal(home: number): void {
     for (const pedestal of this.queries.pedestals.entities) {
       if ((pedestal.getValue(Pedestal, 'slot') ?? -1) === home) {
         pedestal.setValue(Pedestal, 'occupied', false);
@@ -108,7 +147,6 @@ export class WeaponSystem extends createSystem({
         break;
       }
     }
-    weapon.destroy();
   }
 
   /**

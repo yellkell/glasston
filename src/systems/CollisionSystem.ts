@@ -13,19 +13,23 @@ import { Projectile } from '../components/Projectile.js';
 import { Damaging } from '../components/Damaging.js';
 import { Hitbox } from '../components/Hitbox.js';
 import { Health } from '../components/Health.js';
+import { Weapon } from '../components/Weapon.js';
 import { spawnImpact } from '../fx/effects.js';
-import { PALETTE } from '../config.js';
+import { BLOCK, PALETTE } from '../config.js';
 
 const _projPos = new Vector3();
 const _targetPos = new Vector3();
+const _weaponPos = new Vector3();
 
 export class CollisionSystem extends createSystem({
   projectiles: { required: [Projectile, Damaging] },
   hitboxes: { required: [Hitbox] },
+  weapons: { required: [Weapon] },
 }) {
   update(): void {
     const hitboxes = [...this.queries.hitboxes.entities];
     if (hitboxes.length === 0) return;
+    const weapons = [...this.queries.weapons.entities];
 
     // Snapshot projectiles: a hit destroys the entity mid-loop.
     for (const proj of [...this.queries.projectiles.entities]) {
@@ -36,6 +40,15 @@ export class CollisionSystem extends createSystem({
       const owner = proj.getValue(Projectile, 'owner') ?? 0;
       const projRadius = proj.getValue(Projectile, 'radius') ?? 0.045;
       const damage = proj.getValue(Damaging, 'damage') ?? 0;
+
+      // Blocking: a weapon (held or mid-drop) deflects an incoming enemy ball.
+      // Only the opponent's shots are blockable — your own would otherwise be
+      // destroyed by the very weapon that just fired them.
+      if (owner === 1 && this.blockedByWeapon(weapons, projRadius)) {
+        spawnImpact(this.world, _projPos, PALETTE.blue);
+        proj.destroy();
+        continue;
+      }
 
       for (const hitbox of hitboxes) {
         const team = hitbox.getValue(Hitbox, 'team') ?? 0;
@@ -56,6 +69,19 @@ export class CollisionSystem extends createSystem({
         }
       }
     }
+  }
+
+  /** True if any of our weapons sits within block range of `_projPos`. */
+  private blockedByWeapon(weapons: Entity[], projRadius: number): boolean {
+    const reach = projRadius + BLOCK.radius;
+    const reachSq = reach * reach;
+    for (const weapon of weapons) {
+      const obj = weapon.object3D;
+      if (!obj) continue;
+      obj.getWorldPosition(_weaponPos);
+      if (_projPos.distanceToSquared(_weaponPos) <= reachSq) return true;
+    }
+    return false;
   }
 
   private applyDamage(combatant: Entity, damage: number): void {

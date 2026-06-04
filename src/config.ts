@@ -115,6 +115,21 @@ export const WEAPON = {
   parkLift: 0.12,
 };
 
+/** A released weapon falls and despawns when it lands. */
+export const DROP = {
+  gravity: 9.8, // m/s²
+  floorY: 0.04, // weapon centre height at which it "lands" and despawns
+  spin: 3.0, // rad/s tumble while falling, for a little life
+};
+
+/**
+ * Blocking: a weapon (whether held or mid-drop) deflects incoming enemy
+ * ping-pong balls within this radius of it (metres).
+ */
+export const BLOCK = {
+  radius: 0.16,
+};
+
 /** AI opponent behaviour. */
 export const AI = {
   bodyY: 1.4, // chest height of the opponent body

@@ -9,8 +9,8 @@ import { createSystem, InputComponent, Vector3 } from '@iwsdk/core';
 import { Weapon } from '../components/Weapon.js';
 import { Grabbable } from '../components/Grabbable.js';
 import { HeldBy } from '../components/HeldBy.js';
+import { Dropped } from '../components/Dropped.js';
 import { GRAB } from '../config.js';
-import { slotParkPosition } from '../weapons/setup.js';
 
 type Hand = 'left' | 'right';
 const HAND_INDEX: Record<Hand, number> = { left: 0, right: 1 };
@@ -60,13 +60,13 @@ export class GrabSystem extends createSystem({
     for (const weapon of [...this.queries.held.entities]) {
       if ((weapon.getValue(HeldBy, 'hand') ?? -1) !== handIdx) continue;
       weapon.removeComponent(HeldBy);
-      // Snap back to its pedestal, barrel pointing toward the opponent (-Z).
-      const obj = weapon.object3D;
-      if (obj) {
-        const [x, y, z] = slotParkPosition(weapon.getValue(Weapon, 'homeSlot') ?? 0);
-        obj.position.set(x, y, z);
-        obj.quaternion.identity();
-      }
+      // Let it go: it falls under gravity and despawns when it lands (see
+      // WeaponSystem). Drop Grabbable so it can't be re-grabbed mid-air; a
+      // small toss gives the drop some life. It still blocks enemy balls.
+      weapon.removeComponent(Grabbable);
+      weapon.addComponent(Dropped, {
+        velocity: [(Math.random() - 0.5) * 0.4, -0.2, (Math.random() - 0.5) * 0.4],
+      });
     }
   }
 }
