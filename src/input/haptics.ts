@@ -58,7 +58,6 @@ function actuatorKind(gp: LooseGamepad | undefined): string {
 
 let _last = '—';
 let _diag = 'L:? R:?';
-let _testLabel = '';
 
 type Method = 'pulse' | 'effect';
 
@@ -88,6 +87,11 @@ function pulseWith(gp: LooseGamepad | undefined, method: Method, intensity: numb
 /**
  * Buzz the named controller. Returns the API actually used (or a reason it
  * couldn't), which is also recorded for the diagnostic readout.
+ *
+ * `playEffect` is tried FIRST: on the Quest Browser the legacy
+ * `hapticActuators[0].pulse()` mis-routes to the left controller, while
+ * `vibrationActuator.playEffect()` correctly drives each hand (confirmed
+ * on-device). Pulse is kept only as a fallback for runtimes lacking playEffect.
  */
 export function pulseHand(
   session: XRSessionLike,
@@ -98,32 +102,11 @@ export function pulseHand(
   const gp = gamepadFor(session, hand);
   let used: string;
   if (!gp) used = 'no-pad';
-  else if (pulseWith(gp, 'pulse', intensity, durationMs)) used = 'pulse';
   else if (pulseWith(gp, 'effect', intensity, durationMs)) used = 'effect';
+  else if (pulseWith(gp, 'pulse', intensity, durationMs)) used = 'pulse';
   else used = 'no-act';
   _last = `${hand[0].toUpperCase()}:${used}`;
   return used;
-}
-
-// --- Diagnostics: A/B self-test cycling hand × API, plus object identity. ---
-const TEST_SEQ: Array<[Handedness, Method]> = [
-  ['right', 'pulse'],
-  ['right', 'effect'],
-  ['left', 'pulse'],
-  ['left', 'effect'],
-];
-let _ti = 0;
-let _tt = 0;
-
-/** Every ~1.4s, buzz the next hand×API combo and label it for the HUD. */
-export function hapticsSelfTest(session: XRSessionLike, delta: number): void {
-  _tt += delta;
-  if (_tt < 1.4) return;
-  _tt = 0;
-  const [hand, method] = TEST_SEQ[_ti % TEST_SEQ.length];
-  _ti++;
-  const ok = pulseWith(gamepadFor(session, hand), method, 0.9, 140);
-  _testLabel = `TEST ${hand[0].toUpperCase()}/${method}${ok ? '' : '✗'}`;
 }
 
 /** Refresh the per-hand snapshot: actuator API, count, and cross-hand identity. */
@@ -141,5 +124,5 @@ export function probeHaptics(session: XRSessionLike): void {
 
 /** Two compact lines for the HUD diagnostic. */
 export function getHapticsDebugLines(): string[] {
-  return [_diag, `${_testLabel}   last:${_last}`];
+  return [_diag, `last:${_last}`];
 }
