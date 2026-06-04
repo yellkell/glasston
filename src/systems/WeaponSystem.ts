@@ -15,7 +15,7 @@ import { Pedestal } from '../components/Pedestal.js';
 import { spawnProjectile } from '../combat/spawnProjectile.js';
 import { spawnMuzzleFlash, spawnImpact } from '../fx/effects.js';
 import { getAmmoBadge, getArchetype } from '../weapons/archetypes.js';
-import { pulseGamepad } from '../input/haptics.js';
+import { probeHaptics, pulseHand } from '../input/haptics.js';
 import { DROP, PALETTE, WEAPON } from '../config.js';
 
 const HANDS = ['left', 'right'] as const;
@@ -34,6 +34,9 @@ export class WeaponSystem extends createSystem({
   pedestals: { required: [Pedestal] },
 }) {
   update(delta: number): void {
+    // Refresh the per-hand haptics availability snapshot for the HUD readout.
+    probeHaptics(this.world.session);
+
     // Let-go weapons fall and despawn when they land.
     for (const weapon of [...this.queries.dropped.entities]) {
       this.updateDropped(weapon, delta);
@@ -153,11 +156,11 @@ export class WeaponSystem extends createSystem({
   }
 
   /**
-   * Buzz the controller in `hand`. We look the gamepad up by handedness (never
-   * by array index) and hand it to the shared haptics helper, so the pulse can
-   * only ever reach the controller that actually fired.
+   * Buzz the controller in `hand`. Resolved live from the session by
+   * handedness (see input/haptics) so the pulse can only ever reach the
+   * controller that actually fired.
    */
   private haptic(hand: 'left' | 'right'): void {
-    pulseGamepad(this.input.xr.gamepads[hand]?.gamepad, 0.5, 70);
+    pulseHand(this.world.session, hand);
   }
 }

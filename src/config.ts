@@ -151,18 +151,23 @@ export const MATCH = {
 };
 
 /**
- * Soft, playful pastel palette — the friendly "Blasto" look. White, blue, pink
- * and purple. `background` is only used as a fallback when passthrough is
- * unavailable; in an AR session the real room shows through instead.
- *  - blue   → the player's accent (your shots, your boundary)
- *  - pink   → the opponent's accent (their shots, the cat foe)
- *  - purple → shared furniture accent (pedestals, highlights)
- *  - white  → ping-pong balls and soft surfaces
+ * The "Play BLASTO!" poster palette — cyan/teal, candy pink, purple and white,
+ * with toy-bright yellow and blue accents lifted from the blaster on the box
+ * art. `background` is only a fallback when passthrough is unavailable; in an
+ * AR session the real room shows through instead.
+ *  - teal   → the BLASTO brand colour (signage, your boundary)
+ *  - blue   → player accent / toy-gun band
+ *  - pink   → opponent accent (the cat foe) / toy-gun body
+ *  - purple → shared furniture accent (pedestals, clouds, highlights)
+ *  - yellow → toy-gun band pop
+ *  - white  → ping-pong balls, the cat's fur, soft surfaces
  */
 export const PALETTE = {
-  background: 0xeef2ff, // soft lavender-white fallback sky
-  blue: 0x6ec6ff,
-  pink: 0xff9ad6,
+  background: 0xe9f8ff, // soft cyan-white fallback sky
+  teal: 0x4fd8e6,
+  blue: 0x47b8ff,
+  pink: 0xff8fcf,
   purple: 0xb98cff,
+  yellow: 0xffd23f,
   white: 0xfafdff,
 };

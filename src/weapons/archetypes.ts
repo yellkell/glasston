@@ -5,17 +5,17 @@
  */
 
 import {
-  BoxGeometry,
   CanvasTexture,
+  CapsuleGeometry,
   CylinderGeometry,
   Group,
   Mesh,
-  MeshStandardMaterial,
+  SphereGeometry,
   Sprite,
   SpriteMaterial,
   type Object3D,
 } from '@iwsdk/core';
-import { makeGlass, neonEdges } from '../materials/glass.js';
+import { makeGlass } from '../materials/glass.js';
 import { glowSprite } from '../materials/glow.js';
 import { PALETTE } from '../config.js';
 
@@ -94,40 +94,56 @@ export function getArchetype(id: number): Archetype {
 }
 
 /**
- * Build a stylised glass gun. Modelled around the origin = grip point, with the
- * barrel pointing down local -Z (so it aligns with a controller's forward).
+ * Build the chunky toy blaster from the poster: a rounded pink body, a pistol
+ * grip, and a stack of bright bands down the barrel (yellow → blue → white) with
+ * an archetype-coloured sight so the three weapons still read apart. Modelled
+ * around the origin = grip point, with the barrel pointing local -Z (so it
+ * aligns with the controller's aim).
  */
 export function buildWeaponMesh(arch: Archetype): Group {
   const group = new Group();
   group.name = `weapon:${arch.name}`;
 
-  // Body (frosted glass shell).
-  const bodyGeo = new BoxGeometry(0.05, 0.07, 0.12);
-  const body = new Mesh(bodyGeo, makeGlass({ color: arch.tint, roughness: 0.15, thickness: 0.3 }));
-  body.position.set(0, 0.01, -0.02);
-  body.add(neonEdges(bodyGeo, arch.tint));
+  const toy = (color: number, roughness = 0.3) => makeGlass({ color, roughness, emissive: color, emissiveIntensity: 0.08 });
+
+  // Rounded pink body.
+  const body = new Mesh(new SphereGeometry(0.055, 20, 16), toy(PALETTE.pink));
+  body.scale.set(1.15, 1.0, 1.7);
+  body.position.set(0, 0.01, -0.05);
   group.add(body);
 
-  // Barrel (emissive core that glows through the glass).
-  const barrelGeo = new CylinderGeometry(0.018, 0.022, arch.barrelLen, 12);
-  const barrel = new Mesh(
-    barrelGeo,
-    new MeshStandardMaterial({ color: arch.color, emissive: arch.color, emissiveIntensity: 2 }),
-  );
-  barrel.rotation.x = Math.PI / 2; // align cylinder axis to -Z
-  barrel.position.set(0, 0.02, -0.04 - arch.barrelLen / 2);
-  group.add(barrel);
-
-  // Muzzle glow at the barrel tip.
-  const muzzleGlow = glowSprite(arch.color, 0.12, 0.8);
-  muzzleGlow.position.set(0, 0.02, -0.04 - arch.barrelLen);
-  group.add(muzzleGlow);
-
-  // Grip stub.
-  const gripGeo = new BoxGeometry(0.035, 0.09, 0.045);
-  const grip = new Mesh(gripGeo, makeGlass({ color: arch.tint, roughness: 0.2 }));
-  grip.position.set(0, -0.05, 0.02);
+  // Pistol grip, angled back like the box-art toy.
+  const grip = new Mesh(new CapsuleGeometry(0.022, 0.07, 6, 12), toy(PALETTE.pink));
+  grip.position.set(0, -0.06, 0.03);
+  grip.rotation.x = 0.32;
   group.add(grip);
+
+  // Barrel bands (cylinder axis rotated to lie along -Z).
+  const band = (color: number, radius: number, length: number, z: number): void => {
+    const m = new Mesh(new CylinderGeometry(radius, radius, length, 18), toy(color, 0.25));
+    m.rotation.x = Math.PI / 2;
+    m.position.set(0, 0.012, z);
+    group.add(m);
+  };
+  band(PALETTE.yellow, 0.05, 0.045, -0.085);
+  band(PALETTE.blue, 0.053, 0.05, -0.125);
+  band(PALETTE.white, 0.05, 0.03, -0.155);
+
+  // Dark muzzle mouth at the tip.
+  const muzzle = new Mesh(new CylinderGeometry(0.032, 0.032, 0.012, 16), makeGlass({ color: 0x2a2336, roughness: 0.2, emissiveIntensity: 0 }));
+  muzzle.rotation.x = Math.PI / 2;
+  muzzle.position.set(0, 0.012, -0.171);
+  group.add(muzzle);
+
+  // Archetype-coloured sight bump on top, so Popper/Scatter/Lobber differ.
+  const sight = new Mesh(new SphereGeometry(0.018, 12, 10), toy(arch.color, 0.2));
+  sight.position.set(0, 0.06, -0.03);
+  group.add(sight);
+
+  // Soft muzzle glow at the tip, tinted to the shot colour.
+  const muzzleGlow = glowSprite(arch.color, 0.12, 0.8);
+  muzzleGlow.position.set(0, 0.012, -arch.barrelLen - 0.01);
+  group.add(muzzleGlow);
 
   return group;
 }

@@ -24,6 +24,7 @@ import {
 } from 'three';
 import type { World } from '@iwsdk/core';
 import { ARENA_GAP, OCTAGON_VERTICES, PALETTE } from '../config.js';
+import { createTitleBanner } from './banner.js';
 
 /** A soft glowing outline of the octagon play space, laid flat on the floor. */
 function makeOctagonRing(color: number): Line {
@@ -41,13 +42,16 @@ export function buildArena(world: World): Object3D {
   const arena = new Group();
   arena.name = 'arena';
 
-  // Your dodge zone marked on the real floor.
-  arena.add(makeOctagonRing(PALETTE.blue));
+  // Your dodge zone marked on the real floor (BLASTO teal).
+  arena.add(makeOctagonRing(PALETTE.teal));
 
   // The cat opponent's octagonal platform across the room — same shape as ours.
   const oppRing = makeOctagonRing(PALETTE.pink);
   oppRing.position.set(0, 0, -ARENA_GAP);
   arena.add(oppRing);
+
+  // "Play BLASTO!" signage hung high behind the opponent.
+  createTitleBanner(scene);
 
   // --- Friendly, even lighting (passthrough rooms are usually well lit) ---
   // Cool sky / warm pink bounce keeps the toy surfaces reading nicely.
