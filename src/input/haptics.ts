@@ -3,14 +3,15 @@
  *
  * Resolve the gamepad straight from `session.inputSources` (and `trackedSources`)
  * by `inputSource.handedness` at the moment we buzz — never cache a gamepad/
- * actuator reference, never index by array position. Then prefer the standard
- * `vibrationActuator.playEffect()` and fall back to the legacy per-hand
- * `hapticActuators[0].pulse()`.
+ * actuator reference, never index by array position.
  *
- * NOTE: on the Meta Quest Browser, controller haptics have been observed to
- * actuate the wrong physical motor regardless of which (correct) per-hand
- * actuator we call — a platform/driver issue below this layer. `pulseHand`
- * returns which API it used so callers/tests can verify routing.
+ * IMPORTANT (Meta Quest Browser): the standard `vibrationActuator.playEffect()`
+ * actuates the WRONG physical motor for XR controllers (confirmed on-device:
+ * firing the right hand buzzed the left), while the legacy per-hand
+ * `gamepad.hapticActuators[0].pulse()` drives the correct motor. So we call
+ * `pulse()` FIRST and only fall back to `playEffect()` when no pulse actuator
+ * exists — never both, so we can't double-buzz. `pulseHand` returns the API it
+ * used for tests/diagnostics.
  */
 
 type Handedness = 'left' | 'right';
@@ -51,21 +52,24 @@ export function pulseHand(
   const gp = gamepadFor(session, hand);
   if (!gp) return 'no-pad';
 
-  const va = gp.vibrationActuator;
-  if (va?.playEffect) {
-    void va
-      .playEffect('dual-rumble', { duration: durationMs, strongMagnitude: intensity, weakMagnitude: intensity })
-      .catch(() => {});
-    return 'effect';
-  }
+  // Per-hand legacy actuator first — this is the one that routes correctly on
+  // the Quest Browser.
   const legacy = gp.hapticActuators?.[0];
   if (legacy?.pulse) {
     try {
       void legacy.pulse(intensity, durationMs);
       return 'pulse';
     } catch {
-      return 'pulse-err';
+      /* fall through to playEffect */
     }
+  }
+  // Fallback only when there is no legacy actuator at all.
+  const va = gp.vibrationActuator;
+  if (va?.playEffect) {
+    void va
+      .playEffect('dual-rumble', { duration: durationMs, strongMagnitude: intensity, weakMagnitude: intensity })
+      .catch(() => {});
+    return 'effect';
   }
   return 'no-act';
 }
