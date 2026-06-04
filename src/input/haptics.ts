@@ -73,3 +73,15 @@ export function pulseHand(
   }
   return 'no-act';
 }
+
+/**
+ * Buzz BOTH controllers. Workaround for the Meta runtime regression (a recent
+ * system update mis-routes controller haptics across ALL apps, so per-hand
+ * directionality can't be honoured below this layer). Buzzing both guarantees
+ * the acting hand always gets feedback instead of a dead/wrong-hand buzz.
+ * Revert callers to `pulseHand(session, hand)` once the runtime is fixed.
+ */
+export function pulseBothHands(session: XRSessionLike, intensity = 0.7, durationMs = 90): void {
+  pulseHand(session, 'left', intensity, durationMs);
+  pulseHand(session, 'right', intensity, durationMs);
+}
