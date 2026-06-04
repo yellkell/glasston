@@ -14,6 +14,7 @@ import { Pedestal } from '../components/Pedestal.js';
 import { spawnProjectile } from '../combat/spawnProjectile.js';
 import { spawnMuzzleFlash } from '../fx/effects.js';
 import { getAmmoBadge, getArchetype } from '../weapons/archetypes.js';
+import { pulseGamepad } from '../input/haptics.js';
 import { WEAPON } from '../config.js';
 
 const HANDS = ['left', 'right'] as const;
@@ -110,11 +111,12 @@ export class WeaponSystem extends createSystem({
     weapon.destroy();
   }
 
+  /**
+   * Buzz the controller in `hand`. We look the gamepad up by handedness (never
+   * by array index) and hand it to the shared haptics helper, so the pulse can
+   * only ever reach the controller that actually fired.
+   */
   private haptic(hand: 'left' | 'right'): void {
-    const gp = this.input.xr.gamepads[hand];
-    const actuator = gp?.gamepad?.hapticActuators?.[0] as
-      | (GamepadHapticActuator & { pulse?: (value: number, duration: number) => void })
-      | undefined;
-    actuator?.pulse?.(0.5, 70);
+    pulseGamepad(this.input.xr.gamepads[hand]?.gamepad, 0.5, 70);
   }
 }
