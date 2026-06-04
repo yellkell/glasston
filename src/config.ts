@@ -1,7 +1,11 @@
 /**
- * Glasston tunables. Numbers that the gameplay feel depends on live here so they
+ * Blasto tunables. Numbers that the gameplay feel depends on live here so they
  * are easy to find and adjust. Dimensions are in metres, matching the reference
  * "Play Space Dimensions" diagram.
+ *
+ * Blasto is a playful, passthrough-first WebXR game: cat-like duelists lob slow
+ * ping-pong balls at each other and you dodge with your real body. The palette
+ * is soft and friendly — white, blue, pink and purple.
  */
 
 import type { Vector2Tuple } from 'three';
@@ -131,12 +135,19 @@ export const MATCH = {
   matchOverDelay: 6, // pause showing the match result before a full reset
 };
 
-/** Neon accent palette for the glassmorphic-cyberpunk look. */
+/**
+ * Soft, playful pastel palette — the friendly "Blasto" look. White, blue, pink
+ * and purple. `background` is only used as a fallback when passthrough is
+ * unavailable; in an AR session the real room shows through instead.
+ *  - blue   → the player's accent (your shots, your boundary)
+ *  - pink   → the opponent's accent (their shots, the cat foe)
+ *  - purple → shared furniture accent (pedestals, highlights)
+ *  - white  → ping-pong balls and soft surfaces
+ */
 export const PALETTE = {
-  background: 0x05060f,
-  magenta: 0xff2eb0,
-  cyan: 0x2ee6ff,
-  violet: 0x8a5cff,
-  glassTint: 0x9ad8ff,
-  pedestal: 0xff6a00,
+  background: 0xeef2ff, // soft lavender-white fallback sky
+  blue: 0x6ec6ff,
+  pink: 0xff9ad6,
+  purple: 0xb98cff,
+  white: 0xfafdff,
 };

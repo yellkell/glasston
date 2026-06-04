@@ -1,15 +1,17 @@
 /**
- * Shared glass-orb projectile spawner. Both the player's weapon and the
+ * Shared ping-pong ball spawner. Both the player's blaster and the cat
  * opponent fire through this so behaviour and look stay consistent.
  *
- * Each orb is a small emissive core + an additive glow halo + a crossed-quad
- * motion trail (oriented to velocity by ProjectileSystem) — reads as a glowing
- * blown-glass bullet.
+ * Each shot is a light matte-white ball with a soft owner-tinted glow halo and
+ * a short, gentle trail — playful and, above all, easy to read so you can dodge
+ * it with your body. Owner tint: blue = your shots, pink = the cat's.
  */
 
 import {
+  Color,
   Group,
   Mesh,
+  MeshStandardMaterial,
   SphereGeometry,
   Vector3,
   type Entity,
@@ -17,11 +19,10 @@ import {
 } from '@iwsdk/core';
 import { Projectile } from '../components/Projectile.js';
 import { Damaging } from '../components/Damaging.js';
-import { fakeGlass } from '../materials/glass.js';
 import { glowSprite, makeTrail } from '../materials/glow.js';
 
 const BASE_RADIUS = 0.045;
-const ORB_GEO = new SphereGeometry(BASE_RADIUS, 16, 16);
+const BALL_GEO = new SphereGeometry(BASE_RADIUS, 18, 14);
 
 export interface SpawnProjectileOptions {
   position: Vector3;
@@ -29,7 +30,7 @@ export interface SpawnProjectileOptions {
   speed: number;
   owner: 0 | 1; // 0 = player, 1 = opponent
   damage: number;
-  color: number;
+  color: number; // owner-tint glow colour
   radius?: number;
   lifetime?: number;
 }
@@ -42,12 +43,24 @@ export function spawnProjectile(world: World, opts: SpawnProjectileOptions): Ent
 
   const group = new Group();
 
-  const orb = new Mesh(ORB_GEO, fakeGlass({ color: opts.color, emissive: opts.color, emissiveIntensity: 3 }));
-  orb.scale.setScalar(radius / BASE_RADIUS);
-  group.add(orb);
+  // The ball itself: bright matte white, like a real ping-pong ball, with the
+  // owner colour faintly warming it so you can tell the shots apart in flight.
+  const ball = new Mesh(
+    BALL_GEO,
+    new MeshStandardMaterial({
+      color: new Color(0xfafdff),
+      emissive: new Color(opts.color),
+      emissiveIntensity: 0.35,
+      roughness: 0.55,
+      metalness: 0,
+    }),
+  );
+  ball.scale.setScalar(radius / BASE_RADIUS);
+  group.add(ball);
 
-  group.add(glowSprite(opts.color, radius * 6, 0.9));
-  group.add(makeTrail(opts.color, radius * 9, radius * 2.2));
+  // Soft halo + a gentle trail in the owner's colour.
+  group.add(glowSprite(opts.color, radius * 4.5, 0.55));
+  group.add(makeTrail(opts.color, radius * 7, radius * 2));
 
   const entity = world.createTransformEntity(group);
   entity.object3D!.position.copy(opts.position);

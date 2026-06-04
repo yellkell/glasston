@@ -35,22 +35,22 @@ function makePedestalMesh(): Group {
   const group = new Group();
 
   const plinthGeo = new CylinderGeometry(0.09, 0.12, 0.85, 6);
-  const plinth = new Mesh(plinthGeo, makeGlass({ color: PALETTE.glassTint, roughness: 0.15 }));
+  const plinth = new Mesh(plinthGeo, makeGlass({ color: PALETTE.white, roughness: 0.35 }));
   plinth.position.y = -0.425;
   group.add(plinth);
 
   const topGeo = new CylinderGeometry(0.13, 0.13, 0.04, 6);
   const topMat = new MeshStandardMaterial({
-    color: new Color(PALETTE.pedestal),
-    emissive: new Color(PALETTE.pedestal),
-    emissiveIntensity: 2.2,
+    color: new Color(PALETTE.purple),
+    emissive: new Color(PALETTE.purple),
+    emissiveIntensity: 1.4,
   });
-  registerPulse(topMat, { amp: 0.6, speed: 2.2 });
+  registerPulse(topMat, { amp: 0.5, speed: 2.2 });
   const top = new Mesh(topGeo, topMat);
-  top.add(neonEdges(topGeo, 0xffd9a0));
+  top.add(neonEdges(topGeo, PALETTE.white));
   group.add(top);
 
-  const glow = glowSprite(PALETTE.pedestal, 0.42, 0.65);
+  const glow = glowSprite(PALETTE.purple, 0.42, 0.6);
   glow.position.y = 0.02;
   group.add(glow);
 

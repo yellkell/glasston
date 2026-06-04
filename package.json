@@ -1,7 +1,7 @@
 {
-  "name": "glasston",
+  "name": "blasto",
   "version": "0.1.0",
-  "description": "A glassmorphic WebXR VR dueling shooter inspired by Blaston, built on the Immersive Web SDK.",
+  "description": "A playful WebXR passthrough ball-battle: cat duelists lob slow ping-pong balls and you dodge with your body. Built on the Immersive Web SDK.",
   "type": "module",
   "private": true,
   "scripts": {

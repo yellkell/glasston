@@ -50,7 +50,7 @@ export class CollisionSystem extends createSystem({
         if (_projPos.distanceToSquared(_targetPos) <= reach * reach) {
           const combatant = (hitbox.getValue(Hitbox, 'owner') as Entity | null) ?? hitbox;
           this.applyDamage(combatant, damage);
-          spawnImpact(this.world, _projPos, owner === 0 ? PALETTE.cyan : PALETTE.magenta);
+          spawnImpact(this.world, _projPos, owner === 0 ? PALETTE.blue : PALETTE.pink);
           proj.destroy();
           break; // projectile is spent
         }

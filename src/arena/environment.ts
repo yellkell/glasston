@@ -1,25 +1,23 @@
 /**
- * The look foundation: filmic tone mapping, a custom dark-neon image-based
- * lighting environment (so transmission glass has rich colour to refract and
- * reflect), a gradient sky dome, a glowing floor grid, and faux-volumetric
- * spotlight cones — the cyberpunk-glass mood from the references.
+ * The look foundation for passthrough Blasto.
+ *
+ * In an immersive-AR session the player's real room IS the backdrop, so we do
+ * NOT draw a sky dome, a big floor, or volumetric light shafts — those would
+ * paint over the passthrough feed. Instead we keep things light and friendly:
+ * neutral tone mapping plus a soft pastel image-based light so the toy-like
+ * surfaces (cat, blasters, balls) pick up gentle blue-above / pink-below tints.
+ *
+ * The scene background is left transparent so passthrough shows through; if the
+ * device can't do AR, IWSDK falls back to a VR session and we paint the soft
+ * lavender fallback colour from the palette.
  */
 
 import {
-  ACESFilmicToneMapping,
-  AdditiveBlending,
-  CanvasTexture,
   Color,
-  ConeGeometry,
-  DomeGradient,
   IBLGradient,
-  Mesh,
-  MeshBasicMaterial,
-  PlaneGeometry,
-  RepeatWrapping,
   type World,
 } from '@iwsdk/core';
-import { ARENA_GAP, PALETTE } from '../config.js';
+import { PALETTE } from '../config.js';
 
 /** hex → [r,g,b,a] in 0..1 for Types.Color component fields. */
 function rgba(hex: number, a = 1): [number, number, number, number] {
@@ -28,87 +26,22 @@ function rgba(hex: number, a = 1): [number, number, number, number] {
 }
 
 export function setupEnvironment(world: World): void {
-  // Filmic tone mapping gives neon a soft, cinematic rolloff instead of clipping.
-  world.renderer.toneMapping = ACESFilmicToneMapping;
-  world.renderer.toneMappingExposure = 1.15;
+  // Neutral, slightly bright tone mapping keeps the pastels clean and friendly
+  // rather than crushing them the way a filmic curve would.
+  world.renderer.toneMappingExposure = 1.0;
 
-  // Background dome + IBL via the EnvironmentSystem components.
+  // Transparent backdrop so the AR passthrough feed shows through. The fallback
+  // colour is only seen if the page renders outside an AR session.
+  world.scene.background = null;
+  world.renderer.setClearColor(new Color(PALETTE.background), 0);
+
+  // Soft pastel IBL: cool blue sky, warm pink ground, airy white horizon. This
+  // is lighting only — it never draws a visible dome — so passthrough is intact.
   const env = world.createTransformEntity(undefined, { persistent: true });
-  env.addComponent(DomeGradient, {
-    sky: rgba(0x05060f),
-    equator: rgba(0x0a0820),
-    ground: rgba(0x02030a),
-    intensity: 1,
-  });
   env.addComponent(IBLGradient, {
-    // Coloured IBL so glass picks up cyan-above / magenta-below tints.
-    sky: rgba(0x123a55),
-    equator: rgba(0x3a1240),
-    ground: rgba(0x081427),
-    intensity: 1.25,
+    sky: rgba(0xbfe4ff),
+    equator: rgba(0xffffff),
+    ground: rgba(0xffd6ec),
+    intensity: 1.1,
   });
-
-  world.scene.add(makeFloorGrid());
-  world.scene.add(makeLightCone(PALETTE.cyan, 0));
-  world.scene.add(makeLightCone(PALETTE.magenta, -ARENA_GAP));
-}
-
-/** A large dark floor with a glowing neon grid receding into the black. */
-function makeFloorGrid(): Mesh {
-  const size = 1024;
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = 'rgba(0,0,0,0)';
-  ctx.fillRect(0, 0, size, size);
-  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-  ctx.lineWidth = 4;
-  const cells = 8;
-  const step = size / cells;
-  for (let i = 0; i <= cells; i++) {
-    const p = i * step;
-    ctx.beginPath();
-    ctx.moveTo(p, 0);
-    ctx.lineTo(p, size);
-    ctx.moveTo(0, p);
-    ctx.lineTo(size, p);
-    ctx.stroke();
-  }
-  const tex = new CanvasTexture(canvas);
-  tex.wrapS = tex.wrapT = RepeatWrapping;
-  tex.repeat.set(24, 24);
-
-  const floor = new Mesh(
-    new PlaneGeometry(60, 60),
-    new MeshBasicMaterial({
-      map: tex,
-      transparent: true,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      color: new Color(PALETTE.cyan),
-      opacity: 0.32,
-    }),
-  );
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.set(0, -0.05, -ARENA_GAP / 2);
-  floor.name = 'floor-grid';
-  return floor;
-}
-
-/** A soft additive cone standing in for a volumetric spotlight shaft. */
-function makeLightCone(color: number, z: number): Mesh {
-  const cone = new Mesh(
-    new ConeGeometry(1.5, 4, 24, 1, true),
-    new MeshBasicMaterial({
-      color: new Color(color),
-      transparent: true,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      side: 2, // DoubleSide
-      opacity: 0.05,
-    }),
-  );
-  cone.position.set(0, 2.6, z);
-  cone.name = 'light-cone';
-  return cone;
 }

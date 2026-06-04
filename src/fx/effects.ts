@@ -37,15 +37,15 @@ export function spawnImpact(world: World, pos: Vector3, color: ColorRepresentati
   re.object3D!.position.copy(pos);
   re.addComponent(Effect, { kind: EffectKind.Ring, life: 0.35, baseScale: 0.3 });
 
-  // Glass shards.
+  // Confetti puff — little soft bits that pop and tumble outward.
   const tint = new Color(color);
   for (let i = 0; i < 8; i++) {
     const mat = new MeshStandardMaterial({
       color: tint,
       emissive: tint,
-      emissiveIntensity: 2.2,
+      emissiveIntensity: 0.9,
       transparent: true,
-      roughness: 0.25,
+      roughness: 0.5,
     });
     const shard = new Mesh(SHARD_GEO, mat);
     const e = world.createTransformEntity(shard);

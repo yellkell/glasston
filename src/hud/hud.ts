@@ -1,9 +1,9 @@
 /**
- * Glassmorphic world-space HUD: a frosted, light-bordered panel above the arena
- * with gradient health bars, score, round timer and status messages. Rendered to
- * a high-resolution canvas for crisp text, with the translucent "frosted glass"
- * look composited in canvas (depth-correct real-glass refraction on a readable
- * HUD isn't worth the cost/legibility hit).
+ * Playful world-space HUD: a soft frosted-pastel panel above the arena with
+ * gradient health bars, score, round timer and status messages. Rendered to a
+ * high-resolution canvas for crisp text. The light, friendly palette (blue =
+ * you, pink = the cat foe) matches the rest of Blasto and stays legible over a
+ * busy passthrough background.
  */
 
 import {
@@ -78,58 +78,58 @@ export function createHud(scene: Scene): Hud {
   const update: Hud['update'] = (state, pHp, pMax, oHp, oMax) => {
     ctx.clearRect(0, 0, W, H);
 
-    // --- Frosted glass panel ---
+    // --- Frosted pastel panel ---
     const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, 'rgba(28,34,66,0.46)');
-    bg.addColorStop(1, 'rgba(8,10,24,0.62)');
+    bg.addColorStop(0, 'rgba(255,255,255,0.66)');
+    bg.addColorStop(1, 'rgba(232,224,255,0.62)');
     roundRect(ctx, 10, 10, W - 20, H - 20, 36);
     ctx.fillStyle = bg;
-    ctx.shadowColor = 'rgba(46,230,255,0.35)';
+    ctx.shadowColor = 'rgba(185,140,255,0.45)';
     ctx.shadowBlur = 40;
     ctx.fill();
     ctx.shadowBlur = 0;
     // Light border + top highlight.
     roundRect(ctx, 10, 10, W - 20, H - 20, 36);
     ctx.lineWidth = 2.5;
-    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
     ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
     roundRect(ctx, 28, 22, W - 56, 6, 3);
     ctx.fill();
 
     // --- Title ---
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
-    ctx.font = '600 30px system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(154,216,255,0.7)';
-    ctx.fillText('G L A S S T O N', W / 2, 56);
+    ctx.font = '700 32px system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(150,110,230,0.9)';
+    ctx.fillText('B L A S T O', W / 2, 56);
 
     // --- Health rows ---
     ctx.textAlign = 'left';
     ctx.font = 'bold 34px system-ui, sans-serif';
 
-    ctx.fillStyle = '#2ee6ff';
+    ctx.fillStyle = '#3aa0e8';
     ctx.fillText('YOU', 48, 130);
-    healthBar(170, 110, 690, 40, pHp / pMax, '#1aa0d8', '#7df3ff');
+    healthBar(170, 110, 690, 40, pHp / pMax, '#6ec6ff', '#bfe6ff');
     ctx.textAlign = 'right';
-    ctx.fillStyle = '#dffaff';
+    ctx.fillStyle = '#2b6fa8';
     ctx.font = 'bold 30px system-ui, sans-serif';
     ctx.fillText(String(Math.ceil(pHp)), 980, 130);
 
     ctx.textAlign = 'left';
     ctx.font = 'bold 34px system-ui, sans-serif';
-    ctx.fillStyle = '#ff2eb0';
-    ctx.fillText('FOE', 48, 196);
-    healthBar(170, 176, 690, 40, oHp / oMax, '#c01a86', '#ff7fd0');
+    ctx.fillStyle = '#e85fae';
+    ctx.fillText('CAT', 48, 196);
+    healthBar(170, 176, 690, 40, oHp / oMax, '#ff9ad6', '#ffd0ec');
     ctx.textAlign = 'right';
-    ctx.fillStyle = '#ffe1f3';
+    ctx.fillStyle = '#b03a7e';
     ctx.font = 'bold 30px system-ui, sans-serif';
     ctx.fillText(String(Math.ceil(oHp)), 980, 196);
 
     // --- Round / score / timer ---
     ctx.textAlign = 'center';
     ctx.font = 'bold 38px system-ui, sans-serif';
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#6a4fb0';
     ctx.fillText(
       `ROUND ${state.round}     ${state.playerScore} : ${state.aiScore}     ${Math.ceil(state.roundTimer)}s`,
       W / 2,
@@ -138,12 +138,12 @@ export function createHud(scene: Scene): Hud {
 
     // --- Status message ---
     if (state.message) {
-      ctx.fillStyle = 'rgba(5,6,15,0.55)';
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
       roundRect(ctx, 10, 320, W - 20, 120, 30);
       ctx.fill();
       ctx.font = 'bold 64px system-ui, sans-serif';
-      ctx.fillStyle = '#ffd9a0';
-      ctx.shadowColor = '#ffb347';
+      ctx.fillStyle = '#9b6cff';
+      ctx.shadowColor = 'rgba(255,154,214,0.9)';
       ctx.shadowBlur = 28;
       ctx.fillText(state.message, W / 2, 384);
       ctx.shadowBlur = 0;

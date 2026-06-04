@@ -86,7 +86,7 @@ export class AISystem extends createSystem({
       speed: AI.projectileSpeed,
       owner: 1,
       damage: AI.damage,
-      color: PALETTE.magenta,
+      color: PALETTE.pink,
     });
   }
 }

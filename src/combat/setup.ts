@@ -2,13 +2,13 @@
  * Spawns the combatants:
  *  - the player "combatant" entity (shared Health) plus three head-driven IK
  *    body-part hitboxes (see PlayerBodySystem);
- *  - the AI opponent: a glass avatar on the far platform with Health, a Hitbox,
- *    and an AIController that aims, fires and dodges (see AISystem).
+ *  - the AI opponent: a cute cat-like avatar across the room with Health, a
+ *    Hitbox, and an AIController that aims, fires and dodges (see AISystem).
  */
 
 import {
+  ConeGeometry,
   Group,
-  IcosahedronGeometry,
   Mesh,
   Object3D,
   SphereGeometry,
@@ -20,8 +20,7 @@ import { Combatant } from '../components/Combatant.js';
 import { AIController } from '../components/AIController.js';
 import { BodyPart, PlayerBodyPart } from '../components/PlayerBodyPart.js';
 import { AI, ARENA_GAP, BODY_IK, COMBAT, PALETTE } from '../config.js';
-import { makeGlass, neonEdges } from '../materials/glass.js';
-import { glowSprite } from '../materials/glow.js';
+import { makeGlass } from '../materials/glass.js';
 
 export function setupCombatants(world: World): void {
   // --- Player combatant: shared Health pool (no geometry) ---
@@ -41,7 +40,7 @@ export function setupCombatants(world: World): void {
     seg.addComponent(PlayerBodyPart, { part });
   }
 
-  // --- AI opponent: a glass avatar that moves, dodges and shoots ---
+  // --- AI opponent: a cute cat that moves, dodges and shoots ---
   const opponent = world.createTransformEntity(buildOpponentBody(), { persistent: true });
   opponent.object3D!.position.set(0, AI.bodyY, -ARENA_GAP);
   opponent.addComponent(Health, { current: COMBAT.dummyHealth, max: COMBAT.dummyHealth });
@@ -54,29 +53,63 @@ export function setupCombatants(world: World): void {
   });
 }
 
-/** A simple glass duelist: faceted torso gem + a head orb. */
+/**
+ * A cute cat-like duelist: a rounded white body, a big head with triangular
+ * pink-lined ears, simple dark eyes and a little pink nose. Glossy toy-plastic
+ * throughout. The group origin sits at the chest so it lines up with the Hitbox.
+ */
 function buildOpponentBody(): Group {
   const group = new Group();
   group.name = 'opponent';
 
-  const torsoGeo = new IcosahedronGeometry(COMBAT.dummyHitboxRadius, 0);
-  const torso = new Mesh(
-    torsoGeo,
-    makeGlass({ color: PALETTE.magenta, emissive: PALETTE.magenta, emissiveIntensity: 0.7, thickness: 0.6 }),
-  );
-  torso.add(neonEdges(torsoGeo, PALETTE.magenta));
-  group.add(torso);
+  const furWhite = () => makeGlass({ color: PALETTE.white, roughness: 0.45, emissiveIntensity: 0.06 });
+  const pink = () => makeGlass({ color: PALETTE.pink, roughness: 0.4, emissive: PALETTE.pink, emissiveIntensity: 0.3 });
 
-  const headGeo = new SphereGeometry(0.16, 20, 16);
-  const head = new Mesh(headGeo, makeGlass({ color: PALETTE.violet, emissive: PALETTE.violet, emissiveIntensity: 0.8 }));
-  head.position.set(0, 0.42, 0);
+  // Body — a slightly squashed sphere ~ the hitbox size.
+  const r = COMBAT.dummyHitboxRadius;
+  const body = new Mesh(new SphereGeometry(r, 24, 20), furWhite());
+  body.scale.set(1, 1.1, 1);
+  group.add(body);
+
+  // Head — large and round, sat above the body.
+  const headR = r * 0.78;
+  const headY = r * 1.25;
+  const head = new Mesh(new SphereGeometry(headR, 24, 20), furWhite());
+  head.position.set(0, headY, 0);
   group.add(head);
 
-  // Soft aura so the duelist reads as a glowing glass figure.
-  group.add(glowSprite(PALETTE.magenta, 1.1, 0.4));
-  const headGlow = glowSprite(PALETTE.violet, 0.5, 0.5);
-  headGlow.position.set(0, 0.42, 0);
-  group.add(headGlow);
+  // Ears — two cones, pink inner cones nested inside white outers.
+  for (const side of [-1, 1]) {
+    const ear = new Mesh(new ConeGeometry(headR * 0.42, headR * 0.7, 4), furWhite());
+    ear.position.set(side * headR * 0.55, headY + headR * 0.78, 0);
+    ear.rotation.z = side * -0.25;
+    const inner = new Mesh(new ConeGeometry(headR * 0.24, headR * 0.5, 4), pink());
+    inner.position.set(0, -headR * 0.02, 0.02);
+    ear.add(inner);
+    group.add(ear);
+  }
+
+  // Eyes — small dark glossy beads on the front of the face (-z faces player).
+  const eyeMat = makeGlass({ color: 0x2a2440, roughness: 0.15, emissiveIntensity: 0 });
+  for (const side of [-1, 1]) {
+    const eye = new Mesh(new SphereGeometry(headR * 0.16, 16, 12), eyeMat);
+    eye.position.set(side * headR * 0.34, headY + headR * 0.08, -headR * 0.92);
+    group.add(eye);
+  }
+
+  // Nose — a tiny pink muzzle bump.
+  const nose = new Mesh(new SphereGeometry(headR * 0.1, 12, 10), pink());
+  nose.position.set(0, headY - headR * 0.18, -headR * 0.98);
+  group.add(nose);
+
+  // Cheeks — soft pink blush spots.
+  const blush = () => makeGlass({ color: PALETTE.pink, roughness: 0.5, emissive: PALETTE.pink, emissiveIntensity: 0.5 });
+  for (const side of [-1, 1]) {
+    const cheek = new Mesh(new SphereGeometry(headR * 0.13, 12, 10), blush());
+    cheek.scale.set(1, 0.6, 0.5);
+    cheek.position.set(side * headR * 0.6, headY - headR * 0.12, -headR * 0.82);
+    group.add(cheek);
+  }
 
   return group;
 }

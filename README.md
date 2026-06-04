@@ -1,29 +1,28 @@
-# Glasston
+# Blasto
 
-A **glassmorphic WebXR clone of [Blaston](https://www.blastongame.com/)** — a slow-motion
-VR dueling shooter where you stand on a small platform, pull weapons off pedestals around
-you, and dodge slow glowing projectiles with your body. Built on the **Immersive Web SDK
-(IWSDK)** + Three.js, with a frosted-glass / neon-cyberpunk aesthetic.
+A **playful WebXR passthrough ball-battle**. Stand in your real room, grab toy
+blasters off the pedestals around you, and lob **slow ping-pong balls** at a
+cute cat opponent — then dodge theirs with your whole body. Soft, friendly and
+easy to read: white, blue, pink and purple. Built on the **Immersive Web SDK
+(IWSDK)** + Three.js.
 
-See [`PLAN.md`](./PLAN.md) for the full design and phased build plan.
+> Pivoted from the earlier glassmorphic "Glasston" prototype — same dueling
+> mechanics (slow projectiles, body dodging, weapon pedestals, AI opponent),
+> reskinned into a cheerful, passthrough-first toy battle. Optional environments
+> can be layered in later (see [yellkell/vrenv](https://github.com/yellkell/vrenv)).
 
-## Status
+See [`PLAN.md`](./PLAN.md) for the original phased build plan.
 
-- ✅ **Phase 0 — Scaffold & boot:** IWSDK World + WebXR (immersive-vr) session, Vite/TS,
-  in-browser XR emulator for desktop dev.
-- ✅ **Phase 1 — Arena & glass foundation:** octagonal play space (exact Blaston
-  dimensions), curved front rail, opponent platform, dark neon lighting + glassmorphic
-  material factory.
-- ✅ **Phase 2 — Shooting core:** slow glass-orb projectiles fired from the controllers.
-- ✅ **Phase 3 — Targets, collision & dodging:** team-aware collision, a destructible
-  glass dummy, and a **head-driven IK body** so leaning/ducking your real body dodges shots.
-- ✅ **Phase 4 — Weapons, pedestals & dual-wield:** grab weapons (Pistol / Spread / Heavy)
-  off the rim pedestals — one per hand — with ammo, cooldowns, and auto-respawn.
-- ✅ **Phase 5 — The duel:** an AI opponent that strafes, dodges and shoots, plus full
-  round/score/win-lose flow and a world-space HUD.
-- ✅ **Phase 6 — Styling & juice:** dark-neon IBL + filmic tone mapping, iridescent glass,
-  additive glow/bloom & projectile trails, impact-shatter + muzzle FX, neon floor grid &
-  spotlight cones, ambient emissive pulse, and a glassmorphic HUD.
+## How it plays
+
+- **Passthrough first** — the game runs in an immersive-AR session, so the arena
+  floats in your real room. No environment art required to start.
+- A glowing **octagon ring** marks your dodge zone (the exact Blaston play-space
+  dimensions); a low rail sits across the front to lean over.
+- Grab a blaster off a **pedestal** (one per hand) — *Popper*, *Scatter* or
+  *Lobber* — each firing slow, dodge-able ping-pong balls.
+- A **cat duelist** across the room strafes, dodges and lobs balls back. First to
+  win enough rounds takes the match.
 
 ## Quick start
 
@@ -32,7 +31,8 @@ npm install
 npm run dev      # open the printed URL
 ```
 
-- **On a headset** (e.g. Quest browser): you'll get an *Enter VR* offer.
+- **On a headset** (e.g. Quest browser): you'll get an *Enter AR* offer and the
+  arena appears in your room via passthrough.
 - **On desktop**: IWSDK's dev plugin injects a WebXR emulator — fly the scene with
   WASD + mouse, no headset required.
 
@@ -45,10 +45,14 @@ npm run typecheck  # types only
 
 ```
 src/
-  main.ts            # boot the World + build the arena
-  config.ts          # play-space dimensions, pedestal slots, neon palette
-  materials/glass.ts # glassmorphic material factory (+ cheap fallback, neon edges)
-  arena/             # octagon geometry + arena builder
+  main.ts              # boot the World (immersive-AR passthrough) + build the arena
+  config.ts            # play-space dimensions, pedestal slots, pastel palette
+  materials/glass.ts   # glossy toy-plastic material factory (+ soft edges)
+  arena/               # octagon boundary ring + arena builder (passthrough-friendly)
+  combat/              # cat opponent, combatant setup, ping-pong ball spawner
+  weapons/             # blaster archetypes + pedestals
+  systems/             # ECS systems (projectiles, collision, AI, grab, HUD, FX)
+  hud/                 # world-space pastel HUD
 ```
 
 > **Note on scaffolding:** the usual `npm create @iwsdk@latest` pulls templates from a

@@ -1,5 +1,12 @@
 # Glasston — A Glassmorphic WebXR Clone of Blaston
 
+> **⚠️ Pivoted to "Blasto".** This document is the original plan for the
+> glassmorphic/neon prototype. The project has since pivoted to **Blasto**: the
+> same dueling mechanics, reskinned as a cheerful, **passthrough-first** toy
+> battle with cat-like avatars and slow ping-pong balls in a soft white / blue /
+> pink / purple palette. See [`README.md`](./README.md) for the current design;
+> the build plan and mechanics below still apply.
+
 > A browser-based VR dueling shooter inspired by Resolution Games' **Blaston**, rendered
 > with a **glassmorphic** (frosted-glass / translucent / neon-gradient) aesthetic and built
 > on the **Immersive Web SDK (IWSDK)**.

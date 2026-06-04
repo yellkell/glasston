@@ -1,11 +1,11 @@
 /**
- * Glasston — entry point.
+ * Blasto — entry point.
  *
- * Phase 0: boot an IWSDK World with a WebXR (immersive-vr) session offer.
- * Phase 1: build the glassmorphic-neon arena (octagon play space, rail,
- *          weapon pedestals, opponent platform).
+ * Boots an IWSDK World with a WebXR **passthrough** (immersive-AR) session, so
+ * the playful arena — boundary ring, weapon pedestals and the cat opponent —
+ * floats in your real room. Environments can be layered in later.
  *
- * Run `npm run dev` and open the page: on a headset you'll get an "Enter VR"
+ * Run `npm run dev` and open the page: on a headset you'll get an "Enter AR"
  * offer; on desktop the IWSDK dev plugin provides a WebXR emulator (WASD + mouse).
  */
 
@@ -27,21 +27,22 @@ import { PlayerBodySystem } from './systems/PlayerBodySystem.js';
 const container = document.getElementById('scene-container') as HTMLDivElement;
 
 World.create(container, {
-  // Offer an immersive-VR session as soon as the page is interacted with.
+  // Offer an immersive-AR (passthrough) session as soon as the page is
+  // interacted with — Blasto plays in your real room to begin with.
   xr: {
-    sessionMode: SessionMode.ImmersiveVR,
+    sessionMode: SessionMode.ImmersiveAR,
     offer: 'always',
   },
-  // Blaston is a stationary dodge game: enable grabbing (weapons), keep
-  // locomotion off (you stay on your pad), keep spatial UI on (HUD later).
+  // Blasto is a stationary dodge game: enable grabbing (weapons), keep
+  // locomotion off (you stay on your pad), keep spatial UI on (the HUD).
   features: {
     grabbing: true,
     locomotion: false,
     spatialUI: true,
   },
   render: {
-    // We supply our own dark-neon IBL + dome (see setupEnvironment), so the
-    // default bright gradient is off.
+    // We light the scene with our own soft pastel IBL (see setupEnvironment)
+    // and let passthrough provide the backdrop, so the default sky is off.
     defaultLighting: false,
     camera: { position: [0, 1.6, 0] },
   },
@@ -67,5 +68,5 @@ World.create(container, {
   world.registerSystem(FXSystem);
 
   // eslint-disable-next-line no-console
-  console.info('[Glasston] World ready — Phase 6 styling, FX & glass polish online.');
+  console.info('[Blasto] World ready — passthrough arena, cat duelist & ping-pong blasters online.');
 });
