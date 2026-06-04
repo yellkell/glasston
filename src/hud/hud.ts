@@ -16,7 +16,7 @@ import {
 } from '@iwsdk/core';
 import { ARENA_GAP } from '../config.js';
 import type { MatchState } from '../combat/matchState.js';
-import { getHapticsDebug } from '../input/haptics.js';
+import { getHapticsDebugLines } from '../input/haptics.js';
 
 const W = 1024;
 const H = 460;
@@ -105,11 +105,6 @@ export function createHud(scene: Scene): Hud {
     ctx.fillStyle = 'rgba(150,110,230,0.9)';
     ctx.fillText('B L A S T O', W / 2, 56);
 
-    // Haptics diagnostic (temporary): per-hand actuator + last hand buzzed.
-    ctx.font = '600 22px ui-monospace, monospace';
-    ctx.fillStyle = 'rgba(120,90,180,0.85)';
-    ctx.fillText(getHapticsDebug(), W / 2, 92);
-
     // --- Health rows ---
     ctx.textAlign = 'left';
     ctx.font = 'bold 34px system-ui, sans-serif';
@@ -141,6 +136,13 @@ export function createHud(scene: Scene): Hud {
       W / 2,
       280,
     );
+
+    // --- Haptics diagnostic (temporary) ---
+    ctx.font = '600 24px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(120,90,180,0.9)';
+    const [diagLine, testLine] = getHapticsDebugLines();
+    ctx.fillText(diagLine, W / 2, 314);
+    ctx.fillText(testLine, W / 2, 344);
 
     // --- Status message ---
     if (state.message) {

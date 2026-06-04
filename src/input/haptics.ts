@@ -58,6 +58,32 @@ function actuatorKind(gp: LooseGamepad | undefined): string {
 
 let _last = '—';
 let _diag = 'L:? R:?';
+let _testLabel = '';
+
+type Method = 'pulse' | 'effect';
+
+/** Buzz a specific gamepad with a chosen API. Returns true if it issued a call. */
+function pulseWith(gp: LooseGamepad | undefined, method: Method, intensity: number, durationMs: number): boolean {
+  if (!gp) return false;
+  if (method === 'pulse') {
+    const a = gp.hapticActuators?.[0];
+    if (a?.pulse) {
+      try {
+        void a.pulse(intensity, durationMs);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+  const va = gp.vibrationActuator;
+  if (va?.playEffect) {
+    void va.playEffect('dual-rumble', { duration: durationMs, strongMagnitude: intensity, weakMagnitude: intensity }).catch(() => {});
+    return true;
+  }
+  return false;
+}
 
 /**
  * Buzz the named controller. Returns the API actually used (or a reason it
@@ -71,40 +97,49 @@ export function pulseHand(
 ): string {
   const gp = gamepadFor(session, hand);
   let used: string;
-  if (!gp) {
-    used = 'no-pad';
-  } else if (gp.hapticActuators?.[0]?.pulse) {
-    try {
-      void gp.hapticActuators[0].pulse!(intensity, durationMs);
-      used = 'pulse';
-    } catch {
-      used = 'pulse-err';
-    }
-  } else if (gp.vibrationActuator?.playEffect) {
-    void gp.vibrationActuator
-      .playEffect('dual-rumble', { duration: durationMs, strongMagnitude: intensity, weakMagnitude: intensity })
-      .catch(() => {});
-    used = 'effect';
-  } else if (gp.vibrationActuator?.pulse) {
-    try {
-      void gp.vibrationActuator.pulse(intensity, durationMs);
-      used = 'v.pulse';
-    } catch {
-      used = 'v.pulse-err';
-    }
-  } else {
-    used = 'no-act';
-  }
+  if (!gp) used = 'no-pad';
+  else if (pulseWith(gp, 'pulse', intensity, durationMs)) used = 'pulse';
+  else if (pulseWith(gp, 'effect', intensity, durationMs)) used = 'effect';
+  else used = 'no-act';
   _last = `${hand[0].toUpperCase()}:${used}`;
   return used;
 }
 
-/** Refresh the per-hand availability snapshot (cheap; call once per frame). */
-export function probeHaptics(session: XRSessionLike): void {
-  _diag = `L:${actuatorKind(gamepadFor(session, 'left'))} R:${actuatorKind(gamepadFor(session, 'right'))}`;
+// --- Diagnostics: A/B self-test cycling hand × API, plus object identity. ---
+const TEST_SEQ: Array<[Handedness, Method]> = [
+  ['right', 'pulse'],
+  ['right', 'effect'],
+  ['left', 'pulse'],
+  ['left', 'effect'],
+];
+let _ti = 0;
+let _tt = 0;
+
+/** Every ~1.4s, buzz the next hand×API combo and label it for the HUD. */
+export function hapticsSelfTest(session: XRSessionLike, delta: number): void {
+  _tt += delta;
+  if (_tt < 1.4) return;
+  _tt = 0;
+  const [hand, method] = TEST_SEQ[_ti % TEST_SEQ.length];
+  _ti++;
+  const ok = pulseWith(gamepadFor(session, hand), method, 0.9, 140);
+  _testLabel = `TEST ${hand[0].toUpperCase()}/${method}${ok ? '' : '✗'}`;
 }
 
-/** One-line haptics status for the HUD: per-hand actuator + last hand buzzed. */
-export function getHapticsDebug(): string {
-  return `HAPTICS ${_diag} last:${_last}`;
+/** Refresh the per-hand snapshot: actuator API, count, and cross-hand identity. */
+export function probeHaptics(session: XRSessionLike): void {
+  const l = gamepadFor(session, 'left');
+  const r = gamepadFor(session, 'right');
+  const sameGp = !!l && l === r ? ' SAMEgp' : '';
+  const la = l?.hapticActuators?.[0];
+  const ra = r?.hapticActuators?.[0];
+  const sameAct = !!la && la === ra ? ' SAMEact' : '';
+  _diag =
+    `L:${actuatorKind(l)}#${l?.hapticActuators?.length ?? 0} ` +
+    `R:${actuatorKind(r)}#${r?.hapticActuators?.length ?? 0}${sameGp}${sameAct}`;
+}
+
+/** Two compact lines for the HUD diagnostic. */
+export function getHapticsDebugLines(): string[] {
+  return [_diag, `${_testLabel}   last:${_last}`];
 }
