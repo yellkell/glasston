@@ -25,12 +25,14 @@ const _weaponPos = new Vector3();
 export class CollisionSystem extends createSystem({
   projectiles: { required: [Projectile, Damaging] },
   hitboxes: { required: [Hitbox] },
-  weapons: { required: [Weapon] },
+  // Only released (falling) weapons block — querying [Weapon, Dropped] both
+  // restricts to those and registers the Dropped component with the ECS.
+  droppedWeapons: { required: [Weapon, Dropped] },
 }) {
   update(): void {
     const hitboxes = [...this.queries.hitboxes.entities];
     if (hitboxes.length === 0) return;
-    const weapons = [...this.queries.weapons.entities];
+    const weapons = [...this.queries.droppedWeapons.entities];
 
     // Snapshot projectiles: a hit destroys the entity mid-loop.
     for (const proj of [...this.queries.projectiles.entities]) {
@@ -77,7 +79,6 @@ export class CollisionSystem extends createSystem({
     const reach = projRadius + BLOCK.radius;
     const reachSq = reach * reach;
     for (const weapon of weapons) {
-      if (!weapon.hasComponent(Dropped)) continue; // only thrown/dropped weapons block
       const obj = weapon.object3D;
       if (!obj) continue;
       obj.getWorldPosition(_weaponPos);

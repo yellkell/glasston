@@ -28,19 +28,22 @@ const _euler = new Euler();
 
 export class WeaponSystem extends createSystem({
   weapons: { required: [Weapon] },
+  // Declaring Dropped in a query also registers the component with the ECS,
+  // which is what makes hasComponent/getVectorView for it valid elsewhere.
+  dropped: { required: [Weapon, Dropped] },
   pedestals: { required: [Pedestal] },
 }) {
   update(delta: number): void {
+    // Let-go weapons fall and despawn when they land.
+    for (const weapon of [...this.queries.dropped.entities]) {
+      this.updateDropped(weapon, delta);
+    }
+
     for (const weapon of [...this.queries.weapons.entities]) {
       const cd = Math.max(0, (weapon.getValue(Weapon, 'cooldownRemaining') ?? 0) - delta);
       weapon.setValue(Weapon, 'cooldownRemaining', cd);
 
-      // A let-go weapon falls and despawns when it lands.
-      if (weapon.hasComponent(Dropped)) {
-        this.updateDropped(weapon, delta);
-        continue;
-      }
-
+      // Held weapons only past here; parked + falling weapons have no HeldBy.
       if (!weapon.hasComponent(HeldBy)) continue;
       const hand = HANDS[weapon.getValue(HeldBy, 'hand') ?? 1];
       this.followHand(weapon, hand);
