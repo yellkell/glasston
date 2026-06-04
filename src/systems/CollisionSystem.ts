@@ -14,6 +14,7 @@ import { Damaging } from '../components/Damaging.js';
 import { Hitbox } from '../components/Hitbox.js';
 import { Health } from '../components/Health.js';
 import { Weapon } from '../components/Weapon.js';
+import { Dropped } from '../components/Dropped.js';
 import { spawnImpact } from '../fx/effects.js';
 import { BLOCK, PALETTE } from '../config.js';
 
@@ -41,9 +42,9 @@ export class CollisionSystem extends createSystem({
       const projRadius = proj.getValue(Projectile, 'radius') ?? 0.045;
       const damage = proj.getValue(Damaging, 'damage') ?? 0;
 
-      // Blocking: a weapon (held or mid-drop) deflects an incoming enemy ball.
-      // Only the opponent's shots are blockable — your own would otherwise be
-      // destroyed by the very weapon that just fired them.
+      // Blocking: only a released (falling) weapon deflects an incoming enemy
+      // ball — held weapons don't block. Only the opponent's shots are
+      // blockable, so your own freshly fired ball isn't killed at the muzzle.
       if (owner === 1 && this.blockedByWeapon(weapons, projRadius)) {
         spawnImpact(this.world, _projPos, PALETTE.blue);
         proj.destroy();
@@ -71,11 +72,12 @@ export class CollisionSystem extends createSystem({
     }
   }
 
-  /** True if any of our weapons sits within block range of `_projPos`. */
+  /** True if any released (falling) weapon sits within block range of `_projPos`. */
   private blockedByWeapon(weapons: Entity[], projRadius: number): boolean {
     const reach = projRadius + BLOCK.radius;
     const reachSq = reach * reach;
     for (const weapon of weapons) {
+      if (!weapon.hasComponent(Dropped)) continue; // only thrown/dropped weapons block
       const obj = weapon.object3D;
       if (!obj) continue;
       obj.getWorldPosition(_weaponPos);
