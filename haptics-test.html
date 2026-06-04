@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8" /><title>haptics routing test</title></head>
+  <body>
+    <pre id="out">running…</pre>
+    <script type="module">
+      import { pulseHand, gamepadFor } from './src/input/haptics.js';
+
+      const results = [];
+      let hits = [];
+
+      // A fake gamepad tagged with the handedness it physically belongs to.
+      // Calling its actuator records that tag — so a correct routing records
+      // the SAME hand we asked pulseHand to buzz.
+      function gp(tag, { effect = true, pulse = false } = {}) {
+        const g = {};
+        if (effect) g.vibrationActuator = { playEffect: () => { hits.push(tag + ':effect'); return Promise.resolve('complete'); } };
+        if (pulse) g.hapticActuators = [{ pulse: () => { hits.push(tag + ':pulse'); } }];
+        return g;
+      }
+      const src = (handedness, gamepad) => ({ handedness, gamepad });
+
+      function run(name, session, hand, expectTag) {
+        hits = [];
+        const api = pulseHand(session, hand);
+        const got = hits.join(',') || '(none)';
+        const pass = hits.length === 1 && hits[0].startsWith(expectTag + ':');
+        results.push({ name, hand, api, got, expect: expectTag, pass });
+      }
+
+      // 1. Normal two controllers.
+      run('normal', { inputSources: [src('left', gp('L')), src('right', gp('R'))] }, 'right', 'R');
+      run('normal-left', { inputSources: [src('left', gp('L')), src('right', gp('R'))] }, 'left', 'L');
+
+      // 2. Reversed array order (array position must NOT matter).
+      run('reversed', { inputSources: [src('right', gp('R')), src('left', gp('L'))] }, 'right', 'R');
+
+      // 3. Quest quirk: same hands duplicated across inputSources + trackedSources.
+      run('quest-dup', {
+        inputSources: [src('left', gp('L')), src('right', gp('R'))],
+        trackedSources: [src('left', gp('Ldup')), src('right', gp('Rdup'))],
+      }, 'right', 'R');
+
+      // 4. A 'none'/gaze source sneaks in first.
+      run('gaze-first', { inputSources: [src('none', gp('G')), src('left', gp('L')), src('right', gp('R'))] }, 'right', 'R');
+
+      // 5. Only legacy per-hand pulse available (no playEffect).
+      run('legacy-pulse', {
+        inputSources: [src('left', gp('L', { effect: false, pulse: true })), src('right', gp('R', { effect: false, pulse: true }))],
+      }, 'right', 'R');
+
+      const allPass = results.every((r) => r.pass);
+      window.__RESULTS__ = { allPass, results };
+      document.getElementById('out').textContent =
+        (allPass ? 'ALL PASS\n' : 'FAILURES\n') +
+        results.map((r) => `${r.pass ? 'ok ' : 'FAIL'} ${r.name} ask=${r.hand} api=${r.api} hit=${r.got} expect=${r.expect}`).join('\n');
+    </script>
+  </body>
+</html>

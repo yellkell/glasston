@@ -15,7 +15,7 @@ import { Pedestal } from '../components/Pedestal.js';
 import { spawnProjectile } from '../combat/spawnProjectile.js';
 import { spawnMuzzleFlash, spawnImpact } from '../fx/effects.js';
 import { getAmmoBadge, getArchetype } from '../weapons/archetypes.js';
-import { probeHaptics, pulseHand } from '../input/haptics.js';
+import { pulseHand } from '../input/haptics.js';
 import { DROP, PALETTE, WEAPON } from '../config.js';
 
 const HANDS = ['left', 'right'] as const;
@@ -34,9 +34,6 @@ export class WeaponSystem extends createSystem({
   pedestals: { required: [Pedestal] },
 }) {
   update(delta: number): void {
-    // Haptics diagnostic snapshot for the HUD readout.
-    probeHaptics(this.world.session);
-
     // Let-go weapons fall and despawn when they land.
     for (const weapon of [...this.queries.dropped.entities]) {
       this.updateDropped(weapon, delta);
