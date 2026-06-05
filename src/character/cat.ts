@@ -15,7 +15,6 @@ import {
   MeshBasicMaterial,
   MeshPhysicalMaterial,
   SphereGeometry,
-  TorusGeometry,
 } from '@iwsdk/core';
 import { COMBAT } from '../config.js';
 import { makeGlass } from '../materials/glass.js';
@@ -89,15 +88,15 @@ export function buildCat(skin: Skin): Group {
 
   const r = COMBAT.dummyHitboxRadius;
 
-  // Body — soft, slightly squashed snowball (patterned).
+  // Body — slimmer, slightly tall egg shape (patterned).
   const body = new Mesh(new SphereGeometry(r, 28, 22), furMat());
-  body.scale.set(1, 1.05, 0.95);
+  body.scale.set(0.8, 1.18, 0.78);
   group.add(body);
 
   // Stubby paws nudged forward (+Z).
   for (const side of [-1, 1]) {
-    const paw = new Mesh(new SphereGeometry(r * 0.26, 14, 12), furPlain());
-    paw.position.set(side * r * 0.92, -r * 0.15, r * 0.35);
+    const paw = new Mesh(new SphereGeometry(r * 0.22, 14, 12), furPlain());
+    paw.position.set(side * r * 0.66, -r * 0.1, r * 0.35);
     group.add(paw);
   }
 
@@ -135,26 +134,14 @@ export function buildCat(skin: Skin): Group {
     group.add(spark);
   }
 
-  // Nose + open mouth + tongue.
-  const nose = new Mesh(new SphereGeometry(headR * 0.1, 12, 10), accent());
+  // Nose + a small dark mouth (no tongue/cheeks).
+  const nose = new Mesh(new SphereGeometry(headR * 0.09, 12, 10), accent());
   nose.position.set(0, headY - headR * 0.16, headR * 1.0);
   group.add(nose);
-  const mouth = new Mesh(new SphereGeometry(headR * 0.12, 14, 12), dark);
-  mouth.scale.set(1.1, 0.7, 0.5);
-  mouth.position.set(0, headY - headR * 0.34, headR * 0.92);
+  const mouth = new Mesh(new SphereGeometry(headR * 0.09, 14, 12), dark);
+  mouth.scale.set(1.1, 0.6, 0.5);
+  mouth.position.set(0, headY - headR * 0.34, headR * 0.93);
   group.add(mouth);
-  const tongue = new Mesh(new SphereGeometry(headR * 0.07, 12, 10), accent());
-  tongue.scale.set(1, 0.6, 0.6);
-  tongue.position.set(0, headY - headR * 0.4, headR * 0.92);
-  group.add(tongue);
-
-  // Rosy cheeks.
-  for (const side of [-1, 1]) {
-    const cheek = new Mesh(new TorusGeometry(headR * 0.12, headR * 0.04, 8, 16), accent());
-    cheek.position.set(side * headR * 0.62, headY - headR * 0.16, headR * 0.78);
-    cheek.rotation.x = Math.PI / 2;
-    group.add(cheek);
-  }
 
   return group;
 }

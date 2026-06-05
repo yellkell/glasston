@@ -2,11 +2,10 @@
  * Shared ping-pong ball spawner. Both the player's blaster and the cat
  * opponent fire through this so behaviour and look stay consistent.
  *
- * The ball is a clean matte-white sphere with a soft owner-coloured tint baked
- * into its emissive (blue = your shots, pink = the cat's) so you can read whose
- * shot is incoming at a glance. No additive glow/trail: those transparent quads
- * composite into dark "halo" artifacts over AR passthrough, and a real ping-pong
- * ball doesn't glow anyway.
+ * Every ball is a clean matte-white sphere — both sides fire the same white
+ * ping-pong balls. No additive glow/trail: those transparent quads composite
+ * into dark "halo" artifacts over AR passthrough, and a real ping-pong ball
+ * doesn't glow anyway.
  */
 
 import {
@@ -48,8 +47,8 @@ export function spawnProjectile(world: World, opts: SpawnProjectileOptions): Ent
     BALL_GEO,
     new MeshStandardMaterial({
       color: new Color(0xfafdff),
-      emissive: new Color(opts.color),
-      emissiveIntensity: 0.5,
+      emissive: new Color(0xeaf0ff),
+      emissiveIntensity: 0.35,
       roughness: 0.5,
       metalness: 0,
     }),

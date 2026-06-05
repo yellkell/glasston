@@ -1,12 +1,24 @@
 /**
- * Drives the lobby + customizer: builds the floating panels, raycasts the
- * controllers for hover/click, runs Play / vs-Bots / Cancel and the character
- * customizer (skin/pattern/colour with a live preview cat), and shows/hides the
- * match world vs. the menu vs. the customizer based on `app.state`.
+ * Drives the lobby + customizer: builds the floating panels, draws a controller
+ * laser pointer, raycasts for hover/click, runs Play / vs-Bots / Cancel and the
+ * character customizer (skin/pattern/colour with a live preview cat), and shows
+ * or hides the match world vs. the menu vs. the customizer based on `app.state`.
  */
 
 import { createSystem, InputComponent } from '@iwsdk/core';
-import { Group, Object3D, Raycaster, Vector3, type Mesh } from 'three';
+import {
+  BufferGeometry,
+  Group,
+  Line,
+  LineBasicMaterial,
+  Mesh,
+  MeshBasicMaterial,
+  Object3D,
+  Raycaster,
+  SphereGeometry,
+  Vector3,
+  type Intersection,
+} from 'three';
 import { app, type AppState } from '../menu/appState.js';
 import { createMenu, type Menu, type PanelId } from '../menu/menu.js';
 import { createCustomizer, type Customizer } from '../menu/customizer.js';
@@ -16,6 +28,12 @@ import * as sfx from '../audio/sfx.js';
 
 const _origin = new Vector3();
 const _dir = new Vector3();
+const _end = new Vector3();
+
+interface Pointer {
+  line: Line;
+  dot: Mesh;
+}
 
 export class MenuSystem extends createSystem({}) {
   private menu!: Menu;
@@ -25,12 +43,12 @@ export class MenuSystem extends createSystem({}) {
   private ray = new Raycaster();
   private hovered: PanelId | null = null;
   private lastState: AppState | null = null;
+  private pointers: Record<'left' | 'right', Pointer> = {} as Record<'left' | 'right', Pointer>;
 
   init(): void {
     this.menu = createMenu(this.scene);
     this.menuMeshes = [this.menu.byId.play.mesh, this.menu.byId.bots.mesh, this.menu.byId.customize.mesh];
 
-    // Customizer panel (to the right) + a slowly-spinning preview cat (left).
     this.customizer = createCustomizer();
     this.customizer.mesh.position.set(0.5, 1.4, -1.15);
     this.customizer.mesh.rotation.y = -0.35;
@@ -40,17 +58,29 @@ export class MenuSystem extends createSystem({}) {
     this.scene.add(this.previewHolder);
     this.rebuildPreview();
 
+    this.pointers.left = this.makePointer();
+    this.pointers.right = this.makePointer();
+
     this.applyState();
   }
 
   update(delta: number): void {
     if (app.state !== this.lastState) this.applyState();
 
-    if (app.state === 'playing') return;
+    if (app.state === 'playing') {
+      this.hidePointers();
+      return;
+    }
 
     if (app.state === 'customize') {
       this.previewHolder.rotation.y += delta * 0.5;
-      this.raycastCustomizer();
+      for (const hand of ['left', 'right'] as const) {
+        const hit = this.updatePointer(hand, [this.customizer.mesh]);
+        if (hit && hit.uv && this.input.xr.gamepads[hand]?.getButtonDown(InputComponent.Trigger)) {
+          const action = this.customizer.hitTest(hit.uv.x, hit.uv.y);
+          if (action) this.applyCustomize(action);
+        }
+      }
       return;
     }
 
@@ -58,7 +88,7 @@ export class MenuSystem extends createSystem({}) {
     let hover: PanelId | null = null;
     const gamepads = this.input.xr.gamepads;
     for (const hand of ['left', 'right'] as const) {
-      const hit = this.rayHit(hand, this.menuMeshes);
+      const hit = this.updatePointer(hand, this.menuMeshes);
       if (!hit) continue;
       const id = this.panelIdOf(hit.object as Mesh);
       if (id) {
@@ -72,15 +102,53 @@ export class MenuSystem extends createSystem({}) {
     }
   }
 
-  // --- ray helpers ---
+  // --- controller pointer ---
 
-  private rayHit(hand: 'left' | 'right', targets: Object3D[]): import('three').Intersection | undefined {
+  private makePointer(): Pointer {
+    const geo = new BufferGeometry().setFromPoints([new Vector3(), new Vector3(0, 0, -1)]);
+    const line = new Line(geo, new LineBasicMaterial({ color: 0x4fd8e6, transparent: true, opacity: 0.85 }));
+    line.name = 'menu-pointer';
+    line.frustumCulled = false;
+    const dot = new Mesh(new SphereGeometry(0.012, 12, 10), new MeshBasicMaterial({ color: 0x4fd8e6 }));
+    dot.visible = false;
+    this.scene.add(line);
+    this.scene.add(dot);
+    return { line, dot };
+  }
+
+  /** Point the laser down the hand's ray, snap its end + dot to any hit. */
+  private updatePointer(hand: 'left' | 'right', targets: Object3D[]): Intersection | undefined {
+    const p = this.pointers[hand];
     const rayObj = this.world.playerSpaceEntities.raySpaces[hand]?.object3D;
-    if (!rayObj) return undefined;
+    if (!rayObj) {
+      p.line.visible = false;
+      p.dot.visible = false;
+      return undefined;
+    }
     rayObj.getWorldPosition(_origin);
     rayObj.getWorldDirection(_dir).negate(); // ray space points down −Z
     this.ray.set(_origin, _dir);
-    return this.ray.intersectObjects(targets, false)[0];
+    const hit = this.ray.intersectObjects(targets, false)[0];
+    _end.copy(hit ? hit.point : _origin.clone().addScaledVector(_dir, 1.6));
+    const pos = p.line.geometry.getAttribute('position');
+    pos.setXYZ(0, _origin.x, _origin.y, _origin.z);
+    pos.setXYZ(1, _end.x, _end.y, _end.z);
+    pos.needsUpdate = true;
+    p.line.visible = true;
+    if (hit) {
+      p.dot.position.copy(hit.point);
+      p.dot.visible = true;
+    } else {
+      p.dot.visible = false;
+    }
+    return hit;
+  }
+
+  private hidePointers(): void {
+    for (const hand of ['left', 'right'] as const) {
+      this.pointers[hand].line.visible = false;
+      this.pointers[hand].dot.visible = false;
+    }
   }
 
   private panelIdOf(mesh: Mesh): PanelId | null {
@@ -89,18 +157,6 @@ export class MenuSystem extends createSystem({}) {
   }
 
   // --- customizer ---
-
-  private raycastCustomizer(): void {
-    const gamepads = this.input.xr.gamepads;
-    for (const hand of ['left', 'right'] as const) {
-      const hit = this.rayHit(hand, [this.customizer.mesh]);
-      if (!hit || !hit.uv) continue;
-      if (gamepads[hand]?.getButtonDown(InputComponent.Trigger)) {
-        const action = this.customizer.hitTest(hit.uv.x, hit.uv.y);
-        if (action) this.applyCustomize(action);
-      }
-    }
-  }
 
   private applyCustomize(action: ReturnType<Customizer['hitTest']>): void {
     if (!action) return;
@@ -161,6 +217,9 @@ export class MenuSystem extends createSystem({}) {
     if (cat) cat.visible = playing;
     const ring = this.scene.getObjectByName('opponent-platform');
     if (ring) ring.visible = playing;
+    // "Play BLASTO" signage shows only in the menu area, not during a match.
+    const banner = this.scene.getObjectByName('title-banner');
+    if (banner) banner.visible = !playing;
 
     if (!playing && !customizing) this.menu.redrawAll(this.hovered);
     this.lastState = app.state;

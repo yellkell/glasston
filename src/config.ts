@@ -34,7 +34,7 @@ export const OCTAGON_VERTICES: Vector2Tuple[] = [
 ];
 
 /** Distance between the two platforms, centre to centre. Tunes shot travel time. */
-export const ARENA_GAP = 5.2;
+export const ARENA_GAP = 3.8;
 
 /**
  * Weapon pedestal slots, positioned around the rim of the platform. Per Blaston,
@@ -58,7 +58,7 @@ const RAIL_Y = 0.95; // floating-weapon height (a comfortable reach)
  * spots hold the powerful Lobber, so you must turn your back to grab it.
  */
 export const PEDESTAL_SLOTS: PedestalSlot[] = [
-  { id: 'front-left', position: [-OCTAGON_HALF_WIDTH + 0.12, RAIL_Y, -CHAMFER - 0.1], type: 0 },
+  { id: 'front-left', position: [-OCTAGON_HALF_WIDTH + 0.12, RAIL_Y, -CHAMFER - 0.1], type: 3 },
   { id: 'front-right', position: [OCTAGON_HALF_WIDTH - 0.12, RAIL_Y, -CHAMFER - 0.1], type: 0 },
   { id: 'mid-left', position: [-OCTAGON_HALF_WIDTH + 0.05, RAIL_Y, 0], type: 1 },
   { id: 'mid-right', position: [OCTAGON_HALF_WIDTH - 0.05, RAIL_Y, 0], type: 1 },

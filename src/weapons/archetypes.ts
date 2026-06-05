@@ -23,6 +23,7 @@ export const WeaponType = {
   Pistol: 0,
   Spread: 1,
   Heavy: 2,
+  Sniper: 3,
 } as const;
 
 export interface Archetype {
@@ -90,6 +91,22 @@ export const ARCHETYPES: Archetype[] = [
     tint: PALETTE.purple,
     barrelLen: 0.18,
     respawn: 5.0, // strongest → slowest
+  },
+  {
+    id: WeaponType.Sniper,
+    name: 'Sniper',
+    ammo: 10,
+    cooldown: 0.16,
+    auto: true,
+    damage: 5,
+    speed: 7.0, // small + fast
+    radius: 0.028,
+    pellets: 1,
+    spreadDeg: 0,
+    color: PALETTE.teal,
+    tint: PALETTE.teal,
+    barrelLen: 0.28, // long barrel
+    respawn: 2.5,
   },
 ];
 

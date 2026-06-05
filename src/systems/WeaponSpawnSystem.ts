@@ -14,6 +14,7 @@
  */
 
 import { createSystem, type Entity, type Object3D } from '@iwsdk/core';
+import { Box3, Plane, Vector3 } from 'three';
 import { Pedestal } from '../components/Pedestal.js';
 import { Weapon } from '../components/Weapon.js';
 import { app } from '../menu/appState.js';
@@ -32,9 +33,17 @@ export class WeaponSpawnSystem extends createSystem({
   private activeSlot: number | null = null; // the one slot currently respawning
   private respawnTimer = 0;
   private respawnTotal = 1;
-  private ghost?: Object3D; // translucent preview that fills in as it nears spawn
+  private ghost?: Object3D; // translucent preview that fills in top→bottom
+  private ghostPlane?: Plane;
+  private ghostYMin = 0;
+  private ghostYMax = 0;
+  private clipEnabled = false;
 
   update(delta: number): void {
+    if (!this.clipEnabled) {
+      this.world.renderer.localClippingEnabled = true;
+      this.clipEnabled = true;
+    }
     if (app.state !== 'playing') {
       if (this.wasPlaying) {
         for (const w of [...this.queries.weapons.entities]) w.destroy();
@@ -97,36 +106,44 @@ export class WeaponSpawnSystem extends createSystem({
     }
   }
 
-  /** Build a translucent preview of the incoming weapon at its spot. */
+  /**
+   * Build a ghostly (constant-opacity) preview of the incoming weapon at its
+   * spot, clipped so it reveals from the TOP down as it nears spawn.
+   */
   private spawnGhost(slot: number): void {
     this.clearGhost();
     const ghost = buildWeaponMesh(getArchetype(PEDESTAL_SLOTS[slot].type));
     const [x, y, z] = slotParkPosition(slot);
     ghost.position.set(x, y, z);
+    this.scene.add(ghost);
+
+    const box = new Box3().setFromObject(ghost);
+    this.ghostYMin = box.min.y;
+    this.ghostYMax = box.max.y;
+    // Normal +Y, keep where y >= -constant; start with nothing revealed.
+    const plane = new Plane(new Vector3(0, 1, 0), -this.ghostYMax);
+    this.ghostPlane = plane;
+
     ghost.traverse((o) => {
       const m = o as MeshLike;
       const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
       for (const mat of mats) {
         mat.transparent = true;
         mat.depthWrite = false;
-        mat.opacity = 0.1;
+        mat.opacity = 0.4; // stays ghostly until it actually spawns
+        (mat as unknown as { clippingPlanes?: Plane[] }).clippingPlanes = [plane];
       }
     });
-    this.scene.add(ghost);
     this.ghost = ghost;
   }
 
-  /** Fill the ghost in (opacity ramps with progress) + a gentle spin. */
+  /** Reveal the ghost from the top down as progress climbs + a gentle spin. */
   private updateGhost(progress: number, delta: number): void {
     const ghost = this.ghost;
-    if (!ghost) return;
+    if (!ghost || !this.ghostPlane) return;
     ghost.rotation.y += delta * 0.9;
-    const opacity = 0.1 + 0.9 * progress;
-    ghost.traverse((o) => {
-      const m = o as MeshLike;
-      const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
-      for (const mat of mats) mat.opacity = opacity;
-    });
+    const cutoff = this.ghostYMax - progress * (this.ghostYMax - this.ghostYMin);
+    this.ghostPlane.constant = -cutoff;
   }
 
   private clearGhost(): void {
@@ -140,6 +157,7 @@ export class WeaponSpawnSystem extends createSystem({
       for (const mat of mats) (mat as unknown as { dispose?: () => void }).dispose?.();
     });
     this.ghost = undefined;
+    this.ghostPlane = undefined;
   }
 
   private findPedestal(slot: number): Entity | undefined {

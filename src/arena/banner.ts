@@ -7,7 +7,6 @@
  */
 
 import { CanvasTexture, LinearFilter, Mesh, MeshBasicMaterial, PlaneGeometry, type Scene } from '@iwsdk/core';
-import { ARENA_GAP } from '../config.js';
 
 const W = 1024;
 const H = 512;
@@ -87,10 +86,11 @@ export function createTitleBanner(scene: Scene): Mesh {
   texture.minFilter = LinearFilter;
 
   const banner = new Mesh(
-    new PlaneGeometry(3.6, 1.8),
-    new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, opacity: 0.95 }),
+    new PlaneGeometry(2.2, 1.1),
+    new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, opacity: 0.96 }),
   );
-  banner.position.set(0, 4.3, -ARENA_GAP - 0.6);
+  // Sits above the lobby menu panels; MenuSystem hides it during a match.
+  banner.position.set(0, 2.5, -1.8);
   banner.name = 'title-banner';
   scene.add(banner);
   return banner;
