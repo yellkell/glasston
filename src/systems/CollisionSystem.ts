@@ -16,6 +16,9 @@ import { Health } from '../components/Health.js';
 import { Weapon } from '../components/Weapon.js';
 import { Dropped } from '../components/Dropped.js';
 import { spawnImpact } from '../fx/effects.js';
+import { feedback } from '../fx/feedback.js';
+import { pulseHand } from '../input/haptics.js';
+import * as sfx from '../audio/sfx.js';
 import { BLOCK, PALETTE } from '../config.js';
 
 const _projPos = new Vector3();
@@ -49,6 +52,7 @@ export class CollisionSystem extends createSystem({
       // blockable, so your own freshly fired ball isn't killed at the muzzle.
       if (owner === 1 && this.blockedByWeapon(weapons, projRadius)) {
         spawnImpact(this.world, _projPos, PALETTE.blue);
+        sfx.block();
         proj.destroy();
         continue;
       }
@@ -67,6 +71,16 @@ export class CollisionSystem extends createSystem({
           const combatant = (hitbox.getValue(Hitbox, 'owner') as Entity | null) ?? hitbox;
           this.applyDamage(combatant, damage);
           spawnImpact(this.world, _projPos, owner === 0 ? PALETTE.blue : PALETTE.pink);
+          if (owner === 0) {
+            sfx.hitDealt(); // your shot landed on the cat
+          } else {
+            // You took a hit: thud + red vignette + a buzz in both hands (a body
+            // hit isn't handed). No knockback — purely feedback.
+            sfx.hitTaken();
+            feedback.playerHitFlash = 1;
+            pulseHand(this.world.session, 'left', 0.8, 120);
+            pulseHand(this.world.session, 'right', 0.8, 120);
+          }
           proj.destroy();
           break; // projectile is spent
         }

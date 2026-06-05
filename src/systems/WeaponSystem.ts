@@ -16,6 +16,7 @@ import { spawnProjectile } from '../combat/spawnProjectile.js';
 import { spawnMuzzleFlash, spawnImpact } from '../fx/effects.js';
 import { getAmmoBadge, getArchetype } from '../weapons/archetypes.js';
 import { pulseHand } from '../input/haptics.js';
+import * as sfx from '../audio/sfx.js';
 import { DROP, PALETTE, WEAPON } from '../config.js';
 
 const HANDS = ['left', 'right'] as const;
@@ -125,6 +126,7 @@ export class WeaponSystem extends createSystem({
     }
 
     spawnMuzzleFlash(this.world, _muzzle, arch.color);
+    sfx.fire();
 
     const ammo = (weapon.getValue(Weapon, 'ammo') ?? 1) - 1;
     weapon.setValue(Weapon, 'ammo', ammo);

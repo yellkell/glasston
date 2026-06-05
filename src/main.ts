@@ -25,6 +25,7 @@ import { OpponentAnimSystem } from './systems/OpponentAnimSystem.js';
 import { GameStateSystem } from './systems/GameStateSystem.js';
 import { PlayerBodySystem } from './systems/PlayerBodySystem.js';
 import { MenuSystem } from './systems/MenuSystem.js';
+import { PlayerFeedbackSystem } from './systems/PlayerFeedbackSystem.js';
 
 const container = document.getElementById('scene-container') as HTMLDivElement;
 
@@ -70,6 +71,8 @@ World.create(container, {
   world.registerSystem(GameStateSystem);
   // Lobby menu: floating panels, Play / vs-Bots / queue, show-hide the match.
   world.registerSystem(MenuSystem);
+  // Player damage feedback: head-locked red vignette on getting hit.
+  world.registerSystem(PlayerFeedbackSystem);
   // Phase 6 — animate transient FX and the ambient emissive pulse.
   world.registerSystem(FXSystem);
 

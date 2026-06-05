@@ -12,6 +12,7 @@ import { createSystem, InputComponent } from '@iwsdk/core';
 import { Raycaster, Vector3, type Mesh } from 'three';
 import { app, type AppState } from '../menu/appState.js';
 import { createMenu, type Menu, type PanelId } from '../menu/menu.js';
+import * as sfx from '../audio/sfx.js';
 
 const _origin = new Vector3();
 const _dir = new Vector3();
@@ -64,6 +65,8 @@ export class MenuSystem extends createSystem({}) {
   }
 
   private activate(id: PanelId): void {
+    sfx.ensureAudio(); // this click is a user gesture — unlock audio
+    sfx.uiClick();
     if (id === 'play') {
       if (app.state === 'menu') app.state = app.vsBots ? 'playing' : 'queueing';
       else if (app.state === 'queueing') app.state = 'menu';

@@ -14,6 +14,7 @@ import { Projectile } from '../components/Projectile.js';
 import { AIController } from '../components/AIController.js';
 import { match } from '../combat/matchState.js';
 import { app } from '../menu/appState.js';
+import * as sfx from '../audio/sfx.js';
 import { AI, MATCH } from '../config.js';
 import { createHud, type Hud } from '../hud/hud.js';
 
@@ -89,12 +90,15 @@ export class GameStateSystem extends createSystem({
     match.phase = 'roundOver';
     match.resultTimer = MATCH.roundOverDelay;
     match.message = winner === 'player' ? 'ROUND WON' : 'ROUND LOST';
+    sfx.roundEnd(winner === 'player');
   }
 
   private toMatchOver(): void {
     match.phase = 'matchOver';
     match.resultTimer = MATCH.matchOverDelay;
-    match.message = match.playerScore > match.aiScore ? 'YOU WIN THE MATCH' : 'YOU LOSE';
+    const win = match.playerScore > match.aiScore;
+    match.message = win ? 'YOU WIN THE MATCH' : 'YOU LOSE';
+    sfx.matchEnd(win);
   }
 
   private startMatch(c: Combatants): void {
