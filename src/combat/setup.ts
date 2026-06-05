@@ -45,6 +45,7 @@ export function setupCombatants(world: World): void {
   // --- AI opponent: a cute cat that moves, dodges and shoots ---
   const opponent = world.createTransformEntity(buildOpponentBody(), { persistent: true });
   opponent.object3D!.position.set(0, AI.bodyY, -ARENA_GAP);
+  opponent.object3D!.visible = false; // hidden in the lobby; MenuSystem reveals it on Play
   opponent.addComponent(Health, { current: COMBAT.dummyHealth, max: COMBAT.dummyHealth });
   opponent.addComponent(Combatant, { team: 1 });
   opponent.addComponent(Hitbox, { radius: COMBAT.dummyHitboxRadius, team: 1, owner: opponent });

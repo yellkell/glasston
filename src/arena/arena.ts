@@ -48,6 +48,7 @@ export function buildArena(world: World): Object3D {
   // The cat opponent's octagonal platform across the room — same shape as ours.
   const oppRing = makeOctagonRing(PALETTE.pink);
   oppRing.position.set(0, 0, -ARENA_GAP);
+  oppRing.name = 'opponent-platform';
   arena.add(oppRing);
 
   // "Play BLASTO!" signage hung high behind the opponent.

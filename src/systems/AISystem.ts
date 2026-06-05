@@ -9,6 +9,7 @@ import { AIController } from '../components/AIController.js';
 import { Projectile } from '../components/Projectile.js';
 import { spawnProjectile } from '../combat/spawnProjectile.js';
 import { match } from '../combat/matchState.js';
+import { app } from '../menu/appState.js';
 import { AI, PALETTE } from '../config.js';
 
 const _head = new Vector3();
@@ -23,6 +24,7 @@ export class AISystem extends createSystem({
   projectiles: { required: [Projectile] },
 }) {
   update(delta: number): void {
+    if (app.state !== 'playing') return; // dormant in the lobby
     const headObj = this.playerHeadEntity?.object3D;
     if (!headObj) return;
     headObj.getWorldPosition(_head);

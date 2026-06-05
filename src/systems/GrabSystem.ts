@@ -10,6 +10,7 @@ import { Weapon } from '../components/Weapon.js';
 import { Grabbable } from '../components/Grabbable.js';
 import { HeldBy } from '../components/HeldBy.js';
 import { Dropped } from '../components/Dropped.js';
+import { app } from '../menu/appState.js';
 import { GRAB } from '../config.js';
 
 type Hand = 'left' | 'right';
@@ -23,6 +24,7 @@ export class GrabSystem extends createSystem({
   held: { required: [Weapon, HeldBy] },
 }) {
   update(): void {
+    if (app.state !== 'playing') return; // no grabbing in the lobby
     const gamepads = this.input.xr.gamepads;
     for (const hand of ['left', 'right'] as const) {
       const gp = gamepads[hand];

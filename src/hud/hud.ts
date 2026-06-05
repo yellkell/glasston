@@ -22,6 +22,7 @@ const H = 460;
 
 export interface Hud {
   update(state: MatchState, pHp: number, pMax: number, oHp: number, oMax: number): void;
+  setVisible(v: boolean): void;
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
@@ -152,5 +153,5 @@ export function createHud(scene: Scene): Hud {
     texture.needsUpdate = true;
   };
 
-  return { update };
+  return { update, setVisible: (v) => { panel.visible = v; } };
 }

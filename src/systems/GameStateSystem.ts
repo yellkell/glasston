@@ -13,6 +13,7 @@ import { Health } from '../components/Health.js';
 import { Projectile } from '../components/Projectile.js';
 import { AIController } from '../components/AIController.js';
 import { match } from '../combat/matchState.js';
+import { app } from '../menu/appState.js';
 import { AI, MATCH } from '../config.js';
 import { createHud, type Hud } from '../hud/hud.js';
 
@@ -26,21 +27,30 @@ export class GameStateSystem extends createSystem({
   projectiles: { required: [Projectile] },
 }) {
   private hud?: Hud;
+  private wasPlaying = false;
 
   init(): void {
     this.hud = createHud(this.scene);
-    match.phase = 'playing';
-    match.round = 1;
-    match.playerScore = 0;
-    match.aiScore = 0;
-    match.roundTimer = MATCH.roundTime;
-    match.resultTimer = 0;
-    match.message = '';
+    this.hud.setVisible(false); // hidden in the lobby
   }
 
   update(delta: number): void {
+    // Only run the match while a game is live; otherwise sit dormant in the lobby.
+    if (app.state !== 'playing') {
+      this.hud?.setVisible(false);
+      this.wasPlaying = false;
+      return;
+    }
+
     const c = this.findCombatants();
     if (!c) return;
+
+    // Entering a match: reset scores/round/health and kick off round 1.
+    if (!this.wasPlaying) {
+      this.startMatch(c);
+      this.hud?.setVisible(true);
+      this.wasPlaying = true;
+    }
 
     const pHp = c.player.getValue(Health, 'current') ?? 0;
     const pMax = c.player.getValue(Health, 'max') ?? 1;
@@ -63,11 +73,9 @@ export class GameStateSystem extends createSystem({
             this.beginRound(c);
           }
         } else {
-          // matchOver → full reset
-          match.playerScore = 0;
-          match.aiScore = 0;
-          match.round = 1;
-          this.beginRound(c);
+          // matchOver → back to the lobby menu.
+          app.state = 'menu';
+          this.wasPlaying = false;
         }
       }
     }
@@ -87,6 +95,13 @@ export class GameStateSystem extends createSystem({
     match.phase = 'matchOver';
     match.resultTimer = MATCH.matchOverDelay;
     match.message = match.playerScore > match.aiScore ? 'YOU WIN THE MATCH' : 'YOU LOSE';
+  }
+
+  private startMatch(c: Combatants): void {
+    match.playerScore = 0;
+    match.aiScore = 0;
+    match.round = 1;
+    this.beginRound(c);
   }
 
   private beginRound(c: Combatants): void {

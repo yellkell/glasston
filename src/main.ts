@@ -23,6 +23,7 @@ import { CollisionSystem } from './systems/CollisionSystem.js';
 import { AISystem } from './systems/AISystem.js';
 import { GameStateSystem } from './systems/GameStateSystem.js';
 import { PlayerBodySystem } from './systems/PlayerBodySystem.js';
+import { MenuSystem } from './systems/MenuSystem.js';
 
 const container = document.getElementById('scene-container') as HTMLDivElement;
 
@@ -64,6 +65,8 @@ World.create(container, {
   world.registerSystem(ProjectileSystem);
   world.registerSystem(CollisionSystem);
   world.registerSystem(GameStateSystem);
+  // Lobby menu: floating panels, Play / vs-Bots / queue, show-hide the match.
+  world.registerSystem(MenuSystem);
   // Phase 6 — animate transient FX and the ambient emissive pulse.
   world.registerSystem(FXSystem);
 
