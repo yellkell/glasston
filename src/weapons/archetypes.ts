@@ -39,6 +39,7 @@ export interface Archetype {
   color: number; // projectile colour
   tint: number; // weapon body tint
   barrelLen: number; // muzzle distance from grip (m)
+  respawn: number; // seconds for this weapon to respawn (weak = fast, strong = slow)
 }
 
 export const ARCHETYPES: Archetype[] = [
@@ -56,6 +57,7 @@ export const ARCHETYPES: Archetype[] = [
     color: PALETTE.blue,
     tint: PALETTE.blue,
     barrelLen: 0.16,
+    respawn: 2.0, // weakest → fastest
   },
   {
     id: WeaponType.Spread,
@@ -71,6 +73,7 @@ export const ARCHETYPES: Archetype[] = [
     color: PALETTE.pink,
     tint: PALETTE.pink,
     barrelLen: 0.14,
+    respawn: 3.5,
   },
   {
     id: WeaponType.Heavy,
@@ -86,6 +89,7 @@ export const ARCHETYPES: Archetype[] = [
     color: PALETTE.purple,
     tint: PALETTE.purple,
     barrelLen: 0.18,
+    respawn: 5.0, // strongest → slowest
   },
 ];
 

@@ -17,7 +17,7 @@ import { spawnMuzzleFlash, spawnImpact } from '../fx/effects.js';
 import { getAmmoBadge, getArchetype } from '../weapons/archetypes.js';
 import { pulseHand } from '../input/haptics.js';
 import * as sfx from '../audio/sfx.js';
-import { DROP, PALETTE, WEAPON } from '../config.js';
+import { DROP, PALETTE } from '../config.js';
 
 const HANDS = ['left', 'right'] as const;
 const FORWARD = new Vector3(0, 0, -1);
@@ -45,7 +45,11 @@ export class WeaponSystem extends createSystem({
       weapon.setValue(Weapon, 'cooldownRemaining', cd);
 
       // Held weapons only past here; parked + falling weapons have no HeldBy.
-      if (!weapon.hasComponent(HeldBy)) continue;
+      if (!weapon.hasComponent(HeldBy)) {
+        // A parked (floating) weapon slowly spins so it reads as a pickup.
+        if (!weapon.hasComponent(Dropped) && weapon.object3D) weapon.object3D.rotation.y += delta * 0.9;
+        continue;
+      }
       const hand = HANDS[weapon.getValue(HeldBy, 'hand') ?? 1];
       this.followHand(weapon, hand);
 
@@ -143,12 +147,12 @@ export class WeaponSystem extends createSystem({
     weapon.destroy();
   }
 
-  /** Mark a pedestal empty so WeaponSpawnSystem restocks it after the delay. */
+  /** Mark a slot empty (stamped for FIFO) so WeaponSpawnSystem queues its respawn. */
   private freePedestal(home: number): void {
     for (const pedestal of this.queries.pedestals.entities) {
       if ((pedestal.getValue(Pedestal, 'slot') ?? -1) === home) {
         pedestal.setValue(Pedestal, 'occupied', false);
-        pedestal.setValue(Pedestal, 'respawnTimer', WEAPON.respawnDelay);
+        pedestal.setValue(Pedestal, 'emptyOrder', performance.now());
         break;
       }
     }

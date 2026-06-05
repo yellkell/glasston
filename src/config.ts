@@ -46,15 +46,24 @@ export const ARENA_GAP = 5.2;
 export interface PedestalSlot {
   id: string;
   position: [number, number, number];
+  /** Fixed weapon archetype id for this spot: 0 = Popper, 1 = Scatter, 2 = Lobber. */
+  type: number;
 }
 
-const RAIL_Y = 0.95; // pedestal-top height (a comfortable reach near the rail)
+const RAIL_Y = 0.95; // floating-weapon height (a comfortable reach)
 
+/**
+ * Six floating weapon spots around the player (pedestals are invisible). The
+ * four side spots hold the lighter, faster-respawning weapons; the two BEHIND
+ * spots hold the powerful Lobber, so you must turn your back to grab it.
+ */
 export const PEDESTAL_SLOTS: PedestalSlot[] = [
-  { id: 'front-left', position: [-OCTAGON_HALF_WIDTH + 0.12, RAIL_Y, -CHAMFER - 0.1] },
-  { id: 'front-right', position: [OCTAGON_HALF_WIDTH - 0.12, RAIL_Y, -CHAMFER - 0.1] },
-  { id: 'mid-left', position: [-OCTAGON_HALF_WIDTH + 0.05, RAIL_Y, 0] },
-  { id: 'mid-right', position: [OCTAGON_HALF_WIDTH - 0.05, RAIL_Y, 0] },
+  { id: 'front-left', position: [-OCTAGON_HALF_WIDTH + 0.12, RAIL_Y, -CHAMFER - 0.1], type: 0 },
+  { id: 'front-right', position: [OCTAGON_HALF_WIDTH - 0.12, RAIL_Y, -CHAMFER - 0.1], type: 0 },
+  { id: 'mid-left', position: [-OCTAGON_HALF_WIDTH + 0.05, RAIL_Y, 0], type: 1 },
+  { id: 'mid-right', position: [OCTAGON_HALF_WIDTH - 0.05, RAIL_Y, 0], type: 1 },
+  { id: 'back-left', position: [-OCTAGON_HALF_WIDTH + 0.12, RAIL_Y, CHAMFER + 0.1], type: 2 },
+  { id: 'back-right', position: [OCTAGON_HALF_WIDTH - 0.12, RAIL_Y, CHAMFER + 0.1], type: 2 },
 ];
 
 /**

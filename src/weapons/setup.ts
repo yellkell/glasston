@@ -1,27 +1,16 @@
 /**
- * Pedestal setup and the weapon-entity factory.
+ * Spawn-slot setup and the weapon-entity factory.
  *
- * Pedestals are created once as entities (visual hex plinth + `Pedestal`
- * component) at each fixed slot around the rim. They start empty so
- * `WeaponSpawnSystem` fills them on the first frame.
+ * The pedestals are invisible — each slot is just an empty spawn point that a
+ * weapon floats at. They start empty so `WeaponSpawnSystem` fills them when a
+ * match begins.
  */
 
-import {
-  CylinderGeometry,
-  Group,
-  Mesh,
-  MeshStandardMaterial,
-  Color,
-  type Entity,
-  type World,
-} from '@iwsdk/core';
+import { Object3D, type Entity, type World } from '@iwsdk/core';
 import { Pedestal } from '../components/Pedestal.js';
 import { Weapon } from '../components/Weapon.js';
 import { Grabbable } from '../components/Grabbable.js';
-import { PALETTE, PEDESTAL_SLOTS, WEAPON } from '../config.js';
-import { makeGlass, neonEdges } from '../materials/glass.js';
-import { glowSprite } from '../materials/glow.js';
-import { registerPulse } from '../materials/pulse.js';
+import { PEDESTAL_SLOTS, WEAPON } from '../config.js';
 import {
   attachAmmoBadge,
   buildWeaponMesh,
@@ -30,39 +19,12 @@ import {
   type Archetype,
 } from './archetypes.js';
 
-/** A glowing hexagonal weapon pedestal mesh. */
-function makePedestalMesh(): Group {
-  const group = new Group();
-
-  const plinthGeo = new CylinderGeometry(0.09, 0.12, 0.85, 6);
-  const plinth = new Mesh(plinthGeo, makeGlass({ color: PALETTE.white, roughness: 0.35 }));
-  plinth.position.y = -0.425;
-  group.add(plinth);
-
-  const topGeo = new CylinderGeometry(0.13, 0.13, 0.04, 6);
-  const topMat = new MeshStandardMaterial({
-    color: new Color(PALETTE.purple),
-    emissive: new Color(PALETTE.purple),
-    emissiveIntensity: 1.4,
-  });
-  registerPulse(topMat, { amp: 0.5, speed: 2.2 });
-  const top = new Mesh(topGeo, topMat);
-  top.add(neonEdges(topGeo, PALETTE.white));
-  group.add(top);
-
-  const glow = glowSprite(PALETTE.purple, 0.42, 0.6);
-  glow.position.y = 0.02;
-  group.add(glow);
-
-  return group;
-}
-
 export function setupPedestals(world: World): void {
   PEDESTAL_SLOTS.forEach((slot, index) => {
-    const mesh = makePedestalMesh();
-    const entity = world.createTransformEntity(mesh, { persistent: true });
+    // Invisible spawn point: no mesh, just the slot position + state.
+    const entity = world.createTransformEntity(new Object3D(), { persistent: true });
     entity.object3D!.position.set(slot.position[0], slot.position[1], slot.position[2]);
-    entity.addComponent(Pedestal, { slot: index, occupied: false, respawnTimer: 0 });
+    entity.addComponent(Pedestal, { slot: index, occupied: false, emptyOrder: 0 });
   });
 }
 
