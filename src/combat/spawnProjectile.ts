@@ -2,9 +2,11 @@
  * Shared ping-pong ball spawner. Both the player's blaster and the cat
  * opponent fire through this so behaviour and look stay consistent.
  *
- * Each shot is a light matte-white ball with a soft owner-tinted glow halo and
- * a short, gentle trail — playful and, above all, easy to read so you can dodge
- * it with your body. Owner tint: blue = your shots, pink = the cat's.
+ * The ball is a clean matte-white sphere with a soft owner-coloured tint baked
+ * into its emissive (blue = your shots, pink = the cat's) so you can read whose
+ * shot is incoming at a glance. No additive glow/trail: those transparent quads
+ * composite into dark "halo" artifacts over AR passthrough, and a real ping-pong
+ * ball doesn't glow anyway.
  */
 
 import {
@@ -19,7 +21,6 @@ import {
 } from '@iwsdk/core';
 import { Projectile } from '../components/Projectile.js';
 import { Damaging } from '../components/Damaging.js';
-import { glowSprite, makeTrail } from '../materials/glow.js';
 
 const BASE_RADIUS = 0.045;
 const BALL_GEO = new SphereGeometry(BASE_RADIUS, 18, 14);
@@ -30,7 +31,7 @@ export interface SpawnProjectileOptions {
   speed: number;
   owner: 0 | 1; // 0 = player, 1 = opponent
   damage: number;
-  color: number; // owner-tint glow colour
+  color: number; // owner-tint colour
   radius?: number;
   lifetime?: number;
 }
@@ -43,24 +44,18 @@ export function spawnProjectile(world: World, opts: SpawnProjectileOptions): Ent
 
   const group = new Group();
 
-  // The ball itself: bright matte white, like a real ping-pong ball, with the
-  // owner colour faintly warming it so you can tell the shots apart in flight.
   const ball = new Mesh(
     BALL_GEO,
     new MeshStandardMaterial({
       color: new Color(0xfafdff),
       emissive: new Color(opts.color),
-      emissiveIntensity: 0.35,
-      roughness: 0.55,
+      emissiveIntensity: 0.5,
+      roughness: 0.5,
       metalness: 0,
     }),
   );
   ball.scale.setScalar(radius / BASE_RADIUS);
   group.add(ball);
-
-  // Soft halo + a gentle trail in the owner's colour.
-  group.add(glowSprite(opts.color, radius * 4.5, 0.55));
-  group.add(makeTrail(opts.color, radius * 7, radius * 2));
 
   const entity = world.createTransformEntity(group);
   entity.object3D!.position.copy(opts.position);

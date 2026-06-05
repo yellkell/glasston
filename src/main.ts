@@ -21,6 +21,7 @@ import { WeaponSystem } from './systems/WeaponSystem.js';
 import { WeaponSpawnSystem } from './systems/WeaponSpawnSystem.js';
 import { CollisionSystem } from './systems/CollisionSystem.js';
 import { AISystem } from './systems/AISystem.js';
+import { OpponentAnimSystem } from './systems/OpponentAnimSystem.js';
 import { GameStateSystem } from './systems/GameStateSystem.js';
 import { PlayerBodySystem } from './systems/PlayerBodySystem.js';
 import { MenuSystem } from './systems/MenuSystem.js';
@@ -61,6 +62,8 @@ World.create(container, {
   world.registerSystem(WeaponSystem);
   // Phase 5 — AI opponent drives the duel; GameState runs rounds/scoring/HUD.
   world.registerSystem(AISystem);
+  // Cat squash-and-stretch (idle, fire tell, recoil, flinch) on top of the AI.
+  world.registerSystem(OpponentAnimSystem);
   // Projectile motion then collision (collision last so it sees final positions).
   world.registerSystem(ProjectileSystem);
   world.registerSystem(CollisionSystem);
