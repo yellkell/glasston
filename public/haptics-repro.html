@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WebXR Controller Haptics Repro</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 18px; background: #0f1020; color: #eef; }
+      h2 { margin: 0 0 8px; }
+      p { line-height: 1.45; max-width: 60ch; }
+      button { font-size: 20px; padding: 12px 22px; margin: 10px 0; border: 0; border-radius: 10px; background: #6ec6ff; color: #06223a; font-weight: 700; }
+      #log { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 13px; background: #000; color: #9f9; padding: 10px; border-radius: 8px; min-height: 38vh; margin-top: 10px; }
+      .hand { color: #ffd23f; }
+    </style>
+  </head>
+  <body>
+    <h2>WebXR Controller Haptics Repro</h2>
+    <p>
+      Minimal, framework-free reproduction. Tap <b>Enter VR</b>, then pull each
+      <b>trigger</b>. The page asks the runtime to buzz the controller of the
+      <i>same hand</i> and logs exactly which actuator/API it called.
+    </p>
+    <p>
+      <b>Expected:</b> pulling the RIGHT trigger buzzes the RIGHT controller.<br />
+      <b>Observed (regressed runtime):</b> the RIGHT trigger buzzes the LEFT
+      controller; the RIGHT motor never fires from its own input source.
+    </p>
+    <button id="enter">Enter VR</button>
+    <div id="log">log…</div>
+
+    <script>
+      const logEl = document.getElementById('log');
+      function log() {
+        const s = Array.prototype.join.call(arguments, ' ');
+        logEl.textContent = new Date().toLocaleTimeString() + '  ' + s + '\n' + logEl.textContent;
+        // eslint-disable-next-line no-console
+        console.log('[haptics-repro]', s);
+      }
+
+      let session, gl, pressedState = new WeakMap();
+
+      async function enter() {
+        if (!navigator.xr) { log('navigator.xr is unavailable in this browser'); return; }
+        let mode = 'immersive-vr';
+        try {
+          if (!(await navigator.xr.isSessionSupported('immersive-vr'))) mode = 'immersive-ar';
+        } catch (e) { /* ignore, try vr */ }
+        log('requesting', mode, '…');
+        try {
+          session = await navigator.xr.requestSession(mode);
+        } catch (e) { log('requestSession failed:', e.message); return; }
+
+        const canvas = document.createElement('canvas');
+        gl = canvas.getContext('webgl', { xrCompatible: true });
+        await session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+        await session.requestReferenceSpace('local').catch(() => session.requestReferenceSpace('viewer'));
+        session.addEventListener('end', () => log('— session ended —'));
+        session.requestAnimationFrame(onFrame);
+        log('session started. Pull a trigger on each controller.');
+      }
+
+      function buzz(src) {
+        const h = src.handedness;
+        const gp = src.gamepad;
+        if (!gp) { log('hand=' + h, 'has no gamepad'); return; }
+        const ha = gp.hapticActuators && gp.hapticActuators[0];
+        const va = gp.vibrationActuator;
+        log('TRIGGER hand=' + h, '| hapticActuators=' + (gp.hapticActuators ? gp.hapticActuators.length : 0), '| vibrationActuator=' + (va ? 'yes' : 'no'));
+        if (ha && ha.pulse) {
+          try { ha.pulse(1.0, 250); log('  -> called hapticActuators[0].pulse(1.0,250) for', h); }
+          catch (e) { log('  pulse() threw:', e.message); }
+        } else if (va && va.playEffect) {
+          va.playEffect('dual-rumble', { duration: 250, strongMagnitude: 1.0, weakMagnitude: 1.0 });
+          log('  -> called vibrationActuator.playEffect(dual-rumble) for', h);
+        } else {
+          log('  -> NO actuator available for', h);
+        }
+      }
+
+      function onFrame(t, frame) {
+        session.requestAnimationFrame(onFrame);
+        const layer = session.renderState.baseLayer;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, layer.framebuffer);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        for (const src of session.inputSources) {
+          const gp = src.gamepad;
+          if (!gp || !gp.buttons || !gp.buttons[0]) continue;
+          const pressed = gp.buttons[0].pressed; // index 0 = trigger
+          const was = pressedState.get(src) || false;
+          if (pressed && !was) buzz(src);
+          pressedState.set(src, pressed);
+        }
+      }
+
+      document.getElementById('enter').addEventListener('click', enter);
+    </script>
+  </body>
+</html>
