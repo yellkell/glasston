@@ -13,13 +13,16 @@
  * In the lobby everything is cleared and nothing spawns.
  */
 
-import { createSystem, type Entity } from '@iwsdk/core';
+import { createSystem, type Entity, type Object3D } from '@iwsdk/core';
 import { Pedestal } from '../components/Pedestal.js';
 import { Weapon } from '../components/Weapon.js';
 import { app } from '../menu/appState.js';
-import { getArchetype } from '../weapons/archetypes.js';
-import { spawnWeapon } from '../weapons/setup.js';
+import { buildWeaponMesh, getArchetype } from '../weapons/archetypes.js';
+import { spawnWeapon, slotParkPosition } from '../weapons/setup.js';
 import { PEDESTAL_SLOTS } from '../config.js';
+import * as sfx from '../audio/sfx.js';
+
+type MeshLike = Object3D & { material?: { transparent: boolean; opacity: number; depthWrite: boolean } | Array<{ transparent: boolean; opacity: number; depthWrite: boolean }>; geometry?: { dispose(): void } };
 
 export class WeaponSpawnSystem extends createSystem({
   pedestals: { required: [Pedestal] },
@@ -28,6 +31,8 @@ export class WeaponSpawnSystem extends createSystem({
   private wasPlaying = false;
   private activeSlot: number | null = null; // the one slot currently respawning
   private respawnTimer = 0;
+  private respawnTotal = 1;
+  private ghost?: Object3D; // translucent preview that fills in as it nears spawn
 
   update(delta: number): void {
     if (app.state !== 'playing') {
@@ -36,6 +41,7 @@ export class WeaponSpawnSystem extends createSystem({
         for (const p of this.queries.pedestals.entities) p.setValue(Pedestal, 'occupied', false);
         this.activeSlot = null;
         this.respawnTimer = 0;
+        this.clearGhost();
       }
       this.wasPlaying = false;
       return;
@@ -54,15 +60,19 @@ export class WeaponSpawnSystem extends createSystem({
       return;
     }
 
-    // A respawn is in progress: tick it; spawn when done.
+    // A respawn is in progress: tick it; fill the ghost; spawn when done.
     if (this.activeSlot !== null) {
       this.respawnTimer -= delta;
+      const progress = Math.max(0, Math.min(1, 1 - this.respawnTimer / this.respawnTotal));
+      this.updateGhost(progress, delta);
       if (this.respawnTimer <= 0) {
         const ped = this.findPedestal(this.activeSlot);
         if (ped && !ped.getValue(Pedestal, 'occupied')) {
           spawnWeapon(this.world, getArchetype(PEDESTAL_SLOTS[this.activeSlot].type), this.activeSlot);
           ped.setValue(Pedestal, 'occupied', true);
+          sfx.weaponReady();
         }
+        this.clearGhost();
         this.activeSlot = null;
       }
       return;
@@ -81,8 +91,55 @@ export class WeaponSpawnSystem extends createSystem({
     }
     if (nextSlot !== null) {
       this.activeSlot = nextSlot;
-      this.respawnTimer = getArchetype(PEDESTAL_SLOTS[nextSlot].type).respawn;
+      this.respawnTotal = getArchetype(PEDESTAL_SLOTS[nextSlot].type).respawn;
+      this.respawnTimer = this.respawnTotal;
+      this.spawnGhost(nextSlot);
     }
+  }
+
+  /** Build a translucent preview of the incoming weapon at its spot. */
+  private spawnGhost(slot: number): void {
+    this.clearGhost();
+    const ghost = buildWeaponMesh(getArchetype(PEDESTAL_SLOTS[slot].type));
+    const [x, y, z] = slotParkPosition(slot);
+    ghost.position.set(x, y, z);
+    ghost.traverse((o) => {
+      const m = o as MeshLike;
+      const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
+      for (const mat of mats) {
+        mat.transparent = true;
+        mat.depthWrite = false;
+        mat.opacity = 0.1;
+      }
+    });
+    this.scene.add(ghost);
+    this.ghost = ghost;
+  }
+
+  /** Fill the ghost in (opacity ramps with progress) + a gentle spin. */
+  private updateGhost(progress: number, delta: number): void {
+    const ghost = this.ghost;
+    if (!ghost) return;
+    ghost.rotation.y += delta * 0.9;
+    const opacity = 0.1 + 0.9 * progress;
+    ghost.traverse((o) => {
+      const m = o as MeshLike;
+      const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
+      for (const mat of mats) mat.opacity = opacity;
+    });
+  }
+
+  private clearGhost(): void {
+    const ghost = this.ghost;
+    if (!ghost) return;
+    this.scene.remove(ghost);
+    ghost.traverse((o) => {
+      const m = o as MeshLike;
+      m.geometry?.dispose?.();
+      const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
+      for (const mat of mats) (mat as unknown as { dispose?: () => void }).dispose?.();
+    });
+    this.ghost = undefined;
   }
 
   private findPedestal(slot: number): Entity | undefined {

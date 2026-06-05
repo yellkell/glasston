@@ -125,6 +125,12 @@ export function uiClick(): void {
   tone({ freq: 680, to: 900, type: 'sine', dur: 0.05, gain: 0.16 });
 }
 
+/** A weapon finished respawning — a bright little "ready" chime. */
+export function weaponReady(): void {
+  tone({ freq: 740, type: 'triangle', dur: 0.07, gain: 0.16 });
+  tone({ freq: 1110, type: 'triangle', dur: 0.1, gain: 0.16, delay: 0.07 });
+}
+
 /** End-of-round cue. */
 export function roundEnd(win: boolean): void {
   if (win) {
