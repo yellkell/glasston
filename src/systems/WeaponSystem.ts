@@ -15,7 +15,7 @@ import { Pedestal } from '../components/Pedestal.js';
 import { spawnProjectile } from '../combat/spawnProjectile.js';
 import { spawnMuzzleFlash, spawnImpact } from '../fx/effects.js';
 import { getAmmoBadge, getArchetype } from '../weapons/archetypes.js';
-import { pulseBothHands } from '../input/haptics.js';
+import { pulseHand } from '../input/haptics.js';
 import { DROP, PALETTE, WEAPON } from '../config.js';
 
 const HANDS = ['left', 'right'] as const;
@@ -56,7 +56,7 @@ export class WeaponSystem extends createSystem({
         : gp.getButtonDown(InputComponent.Trigger);
 
       if (wantFire && cd <= 0 && (weapon.getValue(Weapon, 'ammo') ?? 0) > 0) {
-        this.fire(weapon, arch);
+        this.fire(weapon, arch, hand);
       }
     }
   }
@@ -97,7 +97,11 @@ export class WeaponSystem extends createSystem({
     }
   }
 
-  private fire(weapon: import('@iwsdk/core').Entity, arch: ReturnType<typeof getArchetype>): void {
+  private fire(
+    weapon: import('@iwsdk/core').Entity,
+    arch: ReturnType<typeof getArchetype>,
+    hand: 'left' | 'right',
+  ): void {
     const obj = weapon.object3D!;
     _forward.copy(FORWARD).applyQuaternion(obj.quaternion).normalize();
     _muzzle.copy(obj.position).addScaledVector(_forward, arch.barrelLen);
@@ -126,7 +130,7 @@ export class WeaponSystem extends createSystem({
     weapon.setValue(Weapon, 'ammo', ammo);
     weapon.setValue(Weapon, 'cooldownRemaining', weapon.getValue(Weapon, 'cooldown') ?? 0.25);
     getAmmoBadge(obj)?.set(ammo);
-    this.haptic();
+    this.haptic(hand);
 
     if (ammo <= 0) this.spend(weapon);
   }
@@ -148,13 +152,8 @@ export class WeaponSystem extends createSystem({
     }
   }
 
-  /**
-   * Fire feedback. We buzz BOTH controllers because a recent Meta runtime
-   * update mis-routes per-hand haptics across all apps; buzzing both guarantees
-   * the firing hand is felt. Swap back to `pulseHand(session, hand)` when the
-   * platform is fixed.
-   */
-  private haptic(): void {
-    pulseBothHands(this.world.session);
+  /** Buzz the firing hand's controller (resolved by handedness; see input/haptics). */
+  private haptic(hand: 'left' | 'right'): void {
+    pulseHand(this.world.session, hand);
   }
 }
