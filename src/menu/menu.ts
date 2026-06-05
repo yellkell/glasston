@@ -17,7 +17,7 @@ import {
 } from '@iwsdk/core';
 import { app } from './appState.js';
 
-export type PanelId = 'play' | 'bots' | 'info';
+export type PanelId = 'play' | 'bots' | 'customize';
 
 export interface MenuPanel {
   id: PanelId;
@@ -31,6 +31,28 @@ export interface Menu {
   byId: Record<PanelId, MenuPanel>;
   setVisible: (v: boolean) => void;
   redrawAll: (hoverId: PanelId | null) => void;
+}
+
+/** Right panel — opens the character customizer. */
+function drawCustomize(ctx: CanvasRenderingContext2D, hover: boolean): void {
+  ctx.fillStyle = '#6a4fb0';
+  ctx.font = '800 38px system-ui, sans-serif';
+  ctx.fillText('CUSTOMISE', PW / 2, 70);
+  // Button.
+  const bx = 90, by = 150, bw = PW - 180, bh = 96;
+  roundRect(ctx, bx, by, bw, bh, 48);
+  const g = ctx.createLinearGradient(bx, by, bx, by + bh);
+  g.addColorStop(0, hover ? '#e0b3ff' : '#cf9cff');
+  g.addColorStop(1, hover ? '#b98cff' : '#a877f0');
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 40px system-ui, sans-serif';
+  ctx.fillText('YOUR CAT', PW / 2, by + bh / 2 + 2);
+  ctx.fillStyle = '#7a6aa0';
+  ctx.font = '500 26px system-ui, sans-serif';
+  ctx.fillText('Skin · pattern · colour', PW / 2, PH - 70);
+  ctx.fillText('Multiplayer coming soon', PW / 2, PH - 36);
 }
 
 const PW = 512;
@@ -146,43 +168,30 @@ function drawBots(ctx: CanvasRenderingContext2D, hover: boolean): void {
   ctx.fillText(hover ? '(tap to toggle)' : '', PW / 2, PH - 36);
 }
 
-/** Right panel — multiplayer status (non-interactive for now). */
-function drawInfo(ctx: CanvasRenderingContext2D, _hover: boolean): void {
-  ctx.fillStyle = '#6a4fb0';
-  ctx.font = '800 40px system-ui, sans-serif';
-  ctx.fillText('MULTIPLAYER', PW / 2, 80);
-  ctx.font = '700 34px system-ui, sans-serif';
-  ctx.fillStyle = '#b06fae';
-  ctx.fillText(app.state === 'queueing' ? 'Searching…' : 'Coming soon', PW / 2, PH / 2);
-  ctx.font = '500 26px system-ui, sans-serif';
-  ctx.fillStyle = '#7a6aa0';
-  ctx.fillText('Real opponents are on the way.', PW / 2, PH - 70);
-}
-
 export function createMenu(scene: Scene): Menu {
   const group = new Group();
   group.name = 'lobby-menu';
 
   const play = makePanel('play', 0.92, 0.7, drawPlay);
   const bots = makePanel('bots', 0.74, 0.56, drawBots);
-  const info = makePanel('info', 0.74, 0.56, drawInfo);
+  const customize = makePanel('customize', 0.74, 0.56, drawCustomize);
 
   // Shallow arc in front of the player, tilted inward toward the centre.
   const y = 1.45;
   play.mesh.position.set(0, y, -1.3);
   bots.mesh.position.set(-0.82, y - 0.02, -1.06);
   bots.mesh.rotation.y = 0.46;
-  info.mesh.position.set(0.82, y - 0.02, -1.06);
-  info.mesh.rotation.y = -0.46;
+  customize.mesh.position.set(0.82, y - 0.02, -1.06);
+  customize.mesh.rotation.y = -0.46;
 
-  const panels = [play, bots, info];
+  const panels = [play, bots, customize];
   for (const p of panels) {
     p.redraw(false);
     group.add(p.mesh);
   }
   scene.add(group);
 
-  const byId = { play, bots, info } as Record<PanelId, MenuPanel>;
+  const byId = { play, bots, customize } as Record<PanelId, MenuPanel>;
   return {
     group,
     panels,

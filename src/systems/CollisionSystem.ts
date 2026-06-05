@@ -78,8 +78,14 @@ export class CollisionSystem extends createSystem({
             // hit isn't handed). No knockback — purely feedback.
             sfx.hitTaken();
             feedback.playerHitFlash = 1;
-            pulseHand(this.world.session, 'left', 0.8, 120);
-            pulseHand(this.world.session, 'right', 0.8, 120);
+            // Direction the shot came FROM = opposite of its travel velocity.
+            const v = proj.getVectorView(Projectile, 'velocity');
+            const len = Math.hypot(v[0], v[1], v[2]) || 1;
+            feedback.srcX = -v[0] / len;
+            feedback.srcY = -v[1] / len;
+            feedback.srcZ = -v[2] / len;
+            pulseHand(this.world.session, 'left', 0.6, 90);
+            pulseHand(this.world.session, 'right', 0.6, 90);
           }
           proj.destroy();
           break; // projectile is spent

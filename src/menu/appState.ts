@@ -2,6 +2,7 @@
  * Top-level app state — the lobby/menu vs. an active match.
  *
  *  - 'menu'     : standing on your platform at the floating menu, choosing.
+ *  - 'customize': the character customizer (skin/pattern/colour) sub-menu.
  *  - 'queueing' : you pressed Play with bots OFF; "searching for an opponent"
  *                 (real multiplayer isn't wired yet, so you wait in the lobby).
  *  - 'playing'  : a match is live (vs bots for now).
@@ -13,7 +14,7 @@
  * systems read `state` to know when play is live.
  */
 
-export type AppState = 'menu' | 'queueing' | 'playing';
+export type AppState = 'menu' | 'customize' | 'queueing' | 'playing';
 
 export const app: { state: AppState; vsBots: boolean } = {
   state: 'menu',
