@@ -18,6 +18,8 @@ export const Projectile = createComponent(
     radius: { type: Types.Float32, default: 0.045 },
     /** Who fired it: 0 = player, 1 = opponent. Shots ignore their owner. */
     owner: { type: Types.Int32, default: 0 },
+    /** Constant world-space acceleration (m/s²) — curves the path for curve weapons. */
+    curve: { type: Types.Vec3, default: [0, 0, 0] as [number, number, number] },
   },
   'A fired projectile travelling at constant velocity.',
 );

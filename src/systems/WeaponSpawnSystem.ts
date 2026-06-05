@@ -20,7 +20,7 @@ import { Weapon } from '../components/Weapon.js';
 import { app } from '../menu/appState.js';
 import { buildWeaponMesh, getArchetype } from '../weapons/archetypes.js';
 import { spawnWeapon, slotParkPosition } from '../weapons/setup.js';
-import { PEDESTAL_SLOTS } from '../config.js';
+import { loadout } from '../menu/loadout.js';
 import * as sfx from '../audio/sfx.js';
 
 type MeshLike = Object3D & { material?: { transparent: boolean; opacity: number; depthWrite: boolean } | Array<{ transparent: boolean; opacity: number; depthWrite: boolean }>; geometry?: { dispose(): void } };
@@ -60,7 +60,7 @@ export class WeaponSpawnSystem extends createSystem({
       // Match start: fill every spot instantly with its fixed weapon type.
       for (const p of this.queries.pedestals.entities) {
         const slot = p.getValue(Pedestal, 'slot') ?? 0;
-        spawnWeapon(this.world, getArchetype(PEDESTAL_SLOTS[slot].type), slot);
+        spawnWeapon(this.world, getArchetype(loadout.slots[slot]), slot);
         p.setValue(Pedestal, 'occupied', true);
       }
       this.activeSlot = null;
@@ -77,7 +77,7 @@ export class WeaponSpawnSystem extends createSystem({
       if (this.respawnTimer <= 0) {
         const ped = this.findPedestal(this.activeSlot);
         if (ped && !ped.getValue(Pedestal, 'occupied')) {
-          spawnWeapon(this.world, getArchetype(PEDESTAL_SLOTS[this.activeSlot].type), this.activeSlot);
+          spawnWeapon(this.world, getArchetype(loadout.slots[this.activeSlot]), this.activeSlot);
           ped.setValue(Pedestal, 'occupied', true);
           sfx.weaponReady();
         }
@@ -100,7 +100,7 @@ export class WeaponSpawnSystem extends createSystem({
     }
     if (nextSlot !== null) {
       this.activeSlot = nextSlot;
-      this.respawnTotal = getArchetype(PEDESTAL_SLOTS[nextSlot].type).respawn;
+      this.respawnTotal = getArchetype(loadout.slots[nextSlot]).respawn;
       this.respawnTimer = this.respawnTotal;
       this.spawnGhost(nextSlot);
     }
@@ -112,7 +112,7 @@ export class WeaponSpawnSystem extends createSystem({
    */
   private spawnGhost(slot: number): void {
     this.clearGhost();
-    const ghost = buildWeaponMesh(getArchetype(PEDESTAL_SLOTS[slot].type));
+    const ghost = buildWeaponMesh(getArchetype(loadout.slots[slot]));
     const [x, y, z] = slotParkPosition(slot);
     ghost.position.set(x, y, z);
     this.scene.add(ghost);

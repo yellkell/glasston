@@ -17,7 +17,7 @@ import { spawnMuzzleFlash, spawnImpact } from '../fx/effects.js';
 import { getAmmoBadge, getArchetype } from '../weapons/archetypes.js';
 import { pulseHand } from '../input/haptics.js';
 import * as sfx from '../audio/sfx.js';
-import { DROP, PALETTE } from '../config.js';
+import { CURVE, DROP, PALETTE } from '../config.js';
 
 const HANDS = ['left', 'right'] as const;
 const FORWARD = new Vector3(0, 0, -1);
@@ -26,6 +26,8 @@ const _muzzle = new Vector3();
 const _forward = new Vector3();
 const _dir = new Vector3();
 const _euler = new Euler();
+const _fwd = new Vector3();
+const _swing = new Vector3();
 
 export class WeaponSystem extends createSystem({
   weapons: { required: [Weapon] },
@@ -34,6 +36,11 @@ export class WeaponSystem extends createSystem({
   dropped: { required: [Weapon, Dropped] },
   pedestals: { required: [Pedestal] },
 }) {
+  // Per-hand swing tracking: the recent change in the controller's forward
+  // direction, used to curve the ball for curve weapons.
+  private prevFwd: Record<'left' | 'right', Vector3> = { left: new Vector3(), right: new Vector3() };
+  private swing: Record<'left' | 'right', Vector3> = { left: new Vector3(), right: new Vector3() };
+
   update(delta: number): void {
     // Let-go weapons fall and despawn when they land.
     for (const weapon of [...this.queries.dropped.entities]) {
@@ -52,6 +59,7 @@ export class WeaponSystem extends createSystem({
       }
       const hand = HANDS[weapon.getValue(HeldBy, 'hand') ?? 1];
       this.followHand(weapon, hand);
+      this.trackSwing(hand, weapon, delta);
 
       const gp = this.input.xr.gamepads[hand];
       if (!gp) continue;
@@ -80,6 +88,20 @@ export class WeaponSystem extends createSystem({
     const ray = spaces.raySpaces[hand]?.object3D ?? grip;
     grip.getWorldPosition(obj.position);
     ray.getWorldQuaternion(obj.quaternion);
+  }
+
+  /** Track how fast the held weapon's forward direction is swinging this hand. */
+  private trackSwing(hand: 'left' | 'right', weapon: import('@iwsdk/core').Entity, delta: number): void {
+    const obj = weapon.object3D;
+    if (!obj) return;
+    _fwd.copy(FORWARD).applyQuaternion(obj.quaternion).normalize();
+    const prev = this.prevFwd[hand];
+    if (prev.lengthSq() > 0) {
+      this.swing[hand].copy(_fwd).sub(prev).multiplyScalar(1 / Math.max(delta, 1e-3));
+    } else {
+      this.swing[hand].set(0, 0, 0);
+    }
+    prev.copy(_fwd);
   }
 
   /** Apply gravity to a dropped weapon; despawn (with a poof) when it lands. */
@@ -111,6 +133,17 @@ export class WeaponSystem extends createSystem({
     _forward.copy(FORWARD).applyQuaternion(obj.quaternion).normalize();
     _muzzle.copy(obj.position).addScaledVector(_forward, arch.barrelLen);
 
+    // Curve weapon: bend the ball along the swing — the component of the hand's
+    // swing velocity perpendicular to the aim becomes a constant acceleration.
+    let curve: [number, number, number] | undefined;
+    if (weapon.getValue(Weapon, 'curve')) {
+      _swing.copy(this.swing[hand]);
+      _swing.addScaledVector(_forward, -_swing.dot(_forward)); // perpendicular part
+      if (_swing.length() > CURVE.maxSwing) _swing.setLength(CURVE.maxSwing);
+      _swing.multiplyScalar(CURVE.strength);
+      curve = [_swing.x, _swing.y, _swing.z];
+    }
+
     const spreadRad = (arch.spreadDeg * Math.PI) / 180;
     for (let i = 0; i < arch.pellets; i++) {
       _dir.copy(_forward);
@@ -126,6 +159,7 @@ export class WeaponSystem extends createSystem({
         damage: arch.damage,
         color: arch.color,
         radius: arch.radius,
+        curve,
       });
     }
 

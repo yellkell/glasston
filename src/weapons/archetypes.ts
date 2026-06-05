@@ -5,6 +5,7 @@
  */
 
 import {
+  BoxGeometry,
   CanvasTexture,
   CapsuleGeometry,
   CylinderGeometry,
@@ -115,55 +116,80 @@ export function getArchetype(id: number): Archetype {
 }
 
 /**
- * Build the chunky toy blaster from the poster: a rounded pink body, a pistol
- * grip, and a stack of bright bands down the barrel (yellow → blue → white) with
- * an archetype-coloured sight so the three weapons still read apart. Modelled
- * around the origin = grip point, with the barrel pointing local -Z (so it
- * aligns with the controller's aim).
+ * Build a weapon mesh. Each archetype has a distinct silhouette so you can tell
+ * them apart at a glance: a chunky toy Popper, a wide multi-barrel Scatter, a
+ * fat Lobber, and a slim long-barrelled Sniper with a scope. Modelled around the
+ * origin = grip point, barrel pointing local -Z (aligns with the controller).
  */
 export function buildWeaponMesh(arch: Archetype): Group {
   const group = new Group();
   group.name = `weapon:${arch.name}`;
 
   const toy = (color: number, roughness = 0.3) => makeGlass({ color, roughness, emissive: color, emissiveIntensity: 0.08 });
+  const dark = () => makeGlass({ color: 0x2a2336, roughness: 0.2, emissiveIntensity: 0 });
+  const cyl = (color: number, rad: number, len: number, y: number, z: number, rough = 0.25): void => {
+    const m = new Mesh(new CylinderGeometry(rad, rad, len, 16), color < 0 ? dark() : toy(color, rough));
+    m.rotation.x = Math.PI / 2;
+    m.position.set(0, y, z);
+    group.add(m);
+  };
 
-  // Rounded pink body.
-  const body = new Mesh(new SphereGeometry(0.055, 20, 16), toy(PALETTE.pink));
-  body.scale.set(1.15, 1.0, 1.7);
-  body.position.set(0, 0.01, -0.05);
-  group.add(body);
-
-  // Pistol grip, angled back like the box-art toy.
+  // Shared pistol grip.
   const grip = new Mesh(new CapsuleGeometry(0.022, 0.07, 6, 12), toy(PALETTE.pink));
   grip.position.set(0, -0.06, 0.03);
   grip.rotation.x = 0.32;
   group.add(grip);
 
-  // Barrel bands (cylinder axis rotated to lie along -Z).
-  const band = (color: number, radius: number, length: number, z: number): void => {
-    const m = new Mesh(new CylinderGeometry(radius, radius, length, 18), toy(color, 0.25));
-    m.rotation.x = Math.PI / 2;
-    m.position.set(0, 0.012, z);
-    group.add(m);
-  };
-  band(PALETTE.yellow, 0.05, 0.045, -0.085);
-  band(PALETTE.blue, 0.053, 0.05, -0.125);
-  band(PALETTE.white, 0.05, 0.03, -0.155);
+  if (arch.id === WeaponType.Spread) {
+    // Scatter — wide flat body with three stubby barrels.
+    const body = new Mesh(new BoxGeometry(0.15, 0.055, 0.1), toy(PALETTE.pink));
+    body.position.set(0, 0.012, -0.04);
+    group.add(body);
+    for (const dx of [-0.05, 0, 0.05]) {
+      const b = new Mesh(new CylinderGeometry(0.017, 0.017, 0.08, 12), toy(PALETTE.blue, 0.25));
+      b.rotation.x = Math.PI / 2;
+      b.position.set(dx, 0.012, -0.11);
+      group.add(b);
+    }
+  } else if (arch.id === WeaponType.Heavy) {
+    // Lobber — fat bulky body and a wide stubby muzzle.
+    const body = new Mesh(new SphereGeometry(0.07, 18, 14), toy(PALETTE.purple));
+    body.scale.set(1.2, 1.15, 1.5);
+    body.position.set(0, 0.012, -0.04);
+    group.add(body);
+    cyl(PALETTE.purple, 0.055, 0.07, 0.012, -0.13);
+    cyl(PALETTE.yellow, 0.07, 0.02, 0.012, -0.165);
+    cyl(-1, 0.05, 0.012, 0.012, -0.178);
+  } else if (arch.id === WeaponType.Sniper) {
+    // Sniper — slim body, long thin barrel, and a scope on top.
+    const body = new Mesh(new BoxGeometry(0.045, 0.05, 0.16), toy(PALETTE.teal));
+    body.position.set(0, 0.014, -0.05);
+    group.add(body);
+    cyl(0xdfe9ee, 0.015, 0.26, 0.02, -0.18, 0.2); // long barrel
+    cyl(-1, 0.02, 0.018, 0.02, -0.30); // muzzle tip
+    const mount = new Mesh(new BoxGeometry(0.012, 0.022, 0.05), toy(PALETTE.teal));
+    mount.position.set(0, 0.05, -0.06);
+    group.add(mount);
+    cyl(-1, 0.016, 0.09, 0.068, -0.06); // scope tube
+    cyl(PALETTE.blue, 0.016, 0.005, 0.068, -0.107, 0.1); // lens
+  } else {
+    // Popper — chunky toy with bright bands + a sight bump.
+    const body = new Mesh(new SphereGeometry(0.055, 20, 16), toy(PALETTE.pink));
+    body.scale.set(1.15, 1.0, 1.7);
+    body.position.set(0, 0.01, -0.05);
+    group.add(body);
+    cyl(PALETTE.yellow, 0.05, 0.045, 0.012, -0.085);
+    cyl(PALETTE.blue, 0.053, 0.05, 0.012, -0.125);
+    cyl(PALETTE.white, 0.05, 0.03, 0.012, -0.155);
+    cyl(-1, 0.032, 0.012, 0.012, -0.171);
+    const sight = new Mesh(new SphereGeometry(0.018, 12, 10), toy(arch.color, 0.2));
+    sight.position.set(0, 0.06, -0.03);
+    group.add(sight);
+  }
 
-  // Dark muzzle mouth at the tip.
-  const muzzle = new Mesh(new CylinderGeometry(0.032, 0.032, 0.012, 16), makeGlass({ color: 0x2a2336, roughness: 0.2, emissiveIntensity: 0 }));
-  muzzle.rotation.x = Math.PI / 2;
-  muzzle.position.set(0, 0.012, -0.171);
-  group.add(muzzle);
-
-  // Archetype-coloured sight bump on top, so Popper/Scatter/Lobber differ.
-  const sight = new Mesh(new SphereGeometry(0.018, 12, 10), toy(arch.color, 0.2));
-  sight.position.set(0, 0.06, -0.03);
-  group.add(sight);
-
-  // Soft muzzle glow at the tip, tinted to the shot colour.
-  const muzzleGlow = glowSprite(arch.color, 0.12, 0.8);
-  muzzleGlow.position.set(0, 0.012, -arch.barrelLen - 0.01);
+  // Soft muzzle glow at the tip.
+  const muzzleGlow = glowSprite(arch.color, 0.1, 0.7);
+  muzzleGlow.position.set(0, 0.014, -arch.barrelLen - 0.01);
   group.add(muzzleGlow);
 
   return group;

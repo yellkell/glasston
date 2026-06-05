@@ -16,6 +16,8 @@ export const Weapon = createComponent(
     cooldownRemaining: { type: Types.Float32, default: 0 },
     /** Index into PEDESTAL_SLOTS this weapon belongs to. */
     homeSlot: { type: Types.Int32, default: 0 },
+    /** Curve weapon: its ball follows the arc of the swing it was fired with. */
+    curve: { type: Types.Boolean, default: false },
   },
   'A wieldable weapon with ammo and cooldown.',
 );

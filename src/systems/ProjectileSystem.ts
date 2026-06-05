@@ -20,6 +20,10 @@ export class ProjectileSystem extends createSystem({
       if (!obj) continue;
 
       const v = entity.getVectorView(Projectile, 'velocity'); // Float32Array [x,y,z]
+      const a = entity.getVectorView(Projectile, 'curve'); // curve acceleration
+      v[0] += a[0] * delta;
+      v[1] += a[1] * delta;
+      v[2] += a[2] * delta;
       obj.position.x += v[0] * delta;
       obj.position.y += v[1] * delta;
       obj.position.z += v[2] * delta;

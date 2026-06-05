@@ -22,8 +22,12 @@ import {
 import { app, type AppState } from '../menu/appState.js';
 import { createMenu, type Menu, type PanelId } from '../menu/menu.js';
 import { createCustomizer, type Customizer } from '../menu/customizer.js';
+import { createLoadoutPanel, type LoadoutPanel } from '../menu/loadoutPanel.js';
+import { loadout, saveLoadout } from '../menu/loadout.js';
+import { ARCHETYPES } from '../weapons/archetypes.js';
 import { buildCat } from '../character/cat.js';
 import { ACCENT_COLORS, FUR_COLORS, PATTERNS, playerSkin, saveSkin } from '../menu/skin.js';
+import type { CustomizeTab } from '../menu/tabs.js';
 import * as sfx from '../audio/sfx.js';
 
 const _origin = new Vector3();
@@ -38,6 +42,8 @@ interface Pointer {
 export class MenuSystem extends createSystem({}) {
   private menu!: Menu;
   private customizer!: Customizer;
+  private loadoutPanel!: LoadoutPanel;
+  private tab: CustomizeTab = 'cat';
   private menuMeshes: Mesh[] = [];
   private previewHolder = new Group();
   private ray = new Raycaster();
@@ -53,6 +59,11 @@ export class MenuSystem extends createSystem({}) {
     this.customizer.mesh.position.set(0.5, 1.4, -1.15);
     this.customizer.mesh.rotation.y = -0.35;
     this.scene.add(this.customizer.mesh);
+
+    this.loadoutPanel = createLoadoutPanel();
+    this.loadoutPanel.mesh.position.copy(this.customizer.mesh.position);
+    this.loadoutPanel.mesh.rotation.copy(this.customizer.mesh.rotation);
+    this.scene.add(this.loadoutPanel.mesh);
 
     this.previewHolder.position.set(-0.45, 1.12, -1.2);
     this.scene.add(this.previewHolder);
@@ -74,11 +85,17 @@ export class MenuSystem extends createSystem({}) {
 
     if (app.state === 'customize') {
       this.previewHolder.rotation.y += delta * 0.5;
+      const editor = this.tab === 'cat' ? this.customizer.mesh : this.loadoutPanel.mesh;
       for (const hand of ['left', 'right'] as const) {
-        const hit = this.updatePointer(hand, [this.customizer.mesh]);
+        const hit = this.updatePointer(hand, [editor]);
         if (hit && hit.uv && this.input.xr.gamepads[hand]?.getButtonDown(InputComponent.Trigger)) {
-          const action = this.customizer.hitTest(hit.uv.x, hit.uv.y);
-          if (action) this.applyCustomize(action);
+          if (this.tab === 'cat') {
+            const a = this.customizer.hitTest(hit.uv.x, hit.uv.y);
+            if (a) this.applyCustomize(a);
+          } else {
+            const a = this.loadoutPanel.hitTest(hit.uv.x, hit.uv.y);
+            if (a) this.applyLoadout(a);
+          }
         }
       }
       return;
@@ -162,6 +179,10 @@ export class MenuSystem extends createSystem({}) {
     if (!action) return;
     sfx.ensureAudio();
     sfx.uiClick();
+    if (action.kind === 'tab') {
+      this.setTab(action.to);
+      return;
+    }
     if (action.kind === 'done') {
       app.state = 'menu';
       this.applyState();
@@ -173,6 +194,33 @@ export class MenuSystem extends createSystem({}) {
     saveSkin();
     this.customizer.redraw();
     this.rebuildPreview();
+  }
+
+  private applyLoadout(action: ReturnType<LoadoutPanel['hitTest']>): void {
+    if (!action) return;
+    sfx.ensureAudio();
+    sfx.uiClick();
+    if (action.kind === 'tab') {
+      this.setTab(action.to);
+      return;
+    }
+    if (action.kind === 'done') {
+      app.state = 'menu';
+      this.applyState();
+      return;
+    }
+    if (action.kind === 'spot') {
+      loadout.slots[action.i] = (loadout.slots[action.i] + 1) % ARCHETYPES.length;
+    } else if (action.kind === 'curve') {
+      loadout.curve[action.t] = !loadout.curve[action.t];
+    }
+    saveLoadout();
+    this.loadoutPanel.redraw();
+  }
+
+  private setTab(tab: CustomizeTab): void {
+    this.tab = tab;
+    this.applyState();
   }
 
   private rebuildPreview(): void {
@@ -210,8 +258,9 @@ export class MenuSystem extends createSystem({}) {
     const playing = app.state === 'playing';
     const customizing = app.state === 'customize';
     this.menu.setVisible(!playing && !customizing);
-    this.customizer.mesh.visible = customizing;
-    this.previewHolder.visible = customizing;
+    this.customizer.mesh.visible = customizing && this.tab === 'cat';
+    this.loadoutPanel.mesh.visible = customizing && this.tab === 'loadout';
+    this.previewHolder.visible = customizing && this.tab === 'cat';
 
     const cat = this.scene.getObjectByName('opponent');
     if (cat) cat.visible = playing;

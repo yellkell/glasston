@@ -33,6 +33,7 @@ export interface SpawnProjectileOptions {
   color: number; // owner-tint colour
   radius?: number;
   lifetime?: number;
+  curve?: [number, number, number]; // constant accel (m/s²) for curve weapons
 }
 
 const _dir = new Vector3();
@@ -63,6 +64,7 @@ export function spawnProjectile(world: World, opts: SpawnProjectileOptions): Ent
     lifetime: opts.lifetime ?? 4,
     radius,
     owner: opts.owner,
+    curve: opts.curve ?? [0, 0, 0],
   });
   entity.addComponent(Damaging, { damage: opts.damage });
   return entity;

@@ -11,6 +11,7 @@ import { Pedestal } from '../components/Pedestal.js';
 import { Weapon } from '../components/Weapon.js';
 import { Grabbable } from '../components/Grabbable.js';
 import { PEDESTAL_SLOTS, WEAPON } from '../config.js';
+import { loadout } from '../menu/loadout.js';
 import {
   attachAmmoBadge,
   buildWeaponMesh,
@@ -48,6 +49,7 @@ export function spawnWeapon(world: World, arch: Archetype, slotIndex: number): E
     cooldown: arch.cooldown,
     cooldownRemaining: 0,
     homeSlot: slotIndex,
+    curve: !!loadout.curve[arch.id],
   });
   entity.addComponent(Grabbable, {});
 

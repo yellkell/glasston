@@ -139,6 +139,12 @@ export const BLOCK = {
   radius: 0.16,
 };
 
+/** Curve weapons: how strongly the controller's swing bends the ball's path. */
+export const CURVE = {
+  strength: 5, // multiplier on the perpendicular swing velocity (m/s²)
+  maxSwing: 3, // clamp the swing speed so flicks don't curve absurdly
+};
+
 /** AI opponent behaviour. */
 export const AI = {
   bodyY: 1.4, // chest height of the opponent body

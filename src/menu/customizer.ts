@@ -7,11 +7,13 @@
 
 import { CanvasTexture, LinearFilter, Mesh, MeshBasicMaterial, PlaneGeometry } from '@iwsdk/core';
 import { ACCENT_COLORS, FUR_COLORS, PATTERNS, playerSkin } from './skin.js';
+import { drawTabs, tabHit, type CustomizeTab } from './tabs.js';
 
 export type CustomizeAction =
   | { kind: 'fur'; i: number }
   | { kind: 'accent'; i: number }
   | { kind: 'pattern'; i: number }
+  | { kind: 'tab'; to: CustomizeTab }
   | { kind: 'done' };
 
 interface Cell {
@@ -93,9 +95,8 @@ export function createCustomizer(): Customizer {
     ctx.strokeStyle = 'rgba(185,140,255,0.7)';
     ctx.stroke();
 
+    drawTabs(ctx, 'cat');
     ctx.fillStyle = '#6a4fb0';
-    ctx.font = '800 40px system-ui, sans-serif';
-    ctx.fillText('CUSTOMISE', W / 2, 44);
     ctx.font = '700 26px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('Fur', 26, FUR_LABEL_Y);
@@ -146,6 +147,8 @@ export function createCustomizer(): Customizer {
   const hitTest = (u: number, v: number): CustomizeAction | null => {
     const px = u * W;
     const py = (1 - v) * H; // uv origin is bottom-left
+    const tab = tabHit(px, py);
+    if (tab) return { kind: 'tab', to: tab };
     for (const c of cells) {
       if (px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + c.h) return c.action;
     }
