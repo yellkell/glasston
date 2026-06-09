@@ -14,6 +14,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   Object3D,
+  PlaneGeometry,
   Raycaster,
   SphereGeometry,
   Vector3,
@@ -21,11 +22,12 @@ import {
 } from 'three';
 import { app, type AppState } from '../menu/appState.js';
 import { createMenu, type Menu, type PanelId } from '../menu/menu.js';
-import { createCustomizer, type Customizer } from '../menu/customizer.js';
+import { createPresetPanel, redrawPresetPanel, presetHit, type PresetPanel } from '../menu/presetPanel.js';
 import { createLoadoutPanel, type LoadoutPanel } from '../menu/loadoutPanel.js';
 import { loadout, saveLoadout } from '../menu/loadout.js';
 import { buildPreviewCat } from '../character/cat.js';
-import { ACCENT_COLORS, FUR_COLORS, PATTERNS, playerSkin, saveSkin } from '../menu/skin.js';
+import { playerSkin, saveSkin } from '../menu/skin.js';
+import { getPreset } from '../menu/catPresets.js';
 import type { CustomizeTab } from '../menu/tabs.js';
 import * as sfx from '../audio/sfx.js';
 import {
@@ -34,7 +36,6 @@ import {
   updatePawTracking,
   updateLookAt,
   playExcitedBounce,
-  playHappyWiggle,
   type CatAnimationState,
 } from '../character/catAnimations.js';
 import { playPawTapAnimation } from '../character/catPaw.js';
@@ -50,7 +51,7 @@ interface Pointer {
 
 export class MenuSystem extends createSystem({}) {
   private menu!: Menu;
-  private customizer!: Customizer;
+  private presetPanel!: PresetPanel;
   private loadoutPanel!: LoadoutPanel;
   private tab: CustomizeTab = 'cat';
   private menuMeshes: Mesh[] = [];
@@ -65,14 +66,20 @@ export class MenuSystem extends createSystem({}) {
     this.menu = createMenu(this.scene);
     this.menuMeshes = [this.menu.byId.play.mesh, this.menu.byId.bots.mesh, this.menu.byId.customize.mesh];
 
-    this.customizer = createCustomizer();
-    this.customizer.mesh.position.set(0.5, 1.4, -1.15);
-    this.customizer.mesh.rotation.y = -0.35;
-    this.scene.add(this.customizer.mesh);
+    this.presetPanel = createPresetPanel();
+    const presetMesh = new Mesh(
+      new PlaneGeometry(1.0, 1.0),
+      new MeshBasicMaterial({ map: this.presetPanel.texture, transparent: true }),
+    );
+    presetMesh.position.set(0.5, 1.4, -1.15);
+    presetMesh.rotation.y = -0.35;
+    this.scene.add(presetMesh);
+    this.presetPanel.mesh = presetMesh;
+    redrawPresetPanel(this.presetPanel);
 
     this.loadoutPanel = createLoadoutPanel();
-    this.loadoutPanel.mesh.position.copy(this.customizer.mesh.position);
-    this.loadoutPanel.mesh.rotation.copy(this.customizer.mesh.rotation);
+    this.loadoutPanel.mesh.position.copy(presetMesh.position);
+    this.loadoutPanel.mesh.rotation.copy(presetMesh.rotation);
     this.scene.add(this.loadoutPanel.mesh);
 
     this.previewHolder.position.set(-0.45, 1.12, -1.2);
@@ -115,7 +122,7 @@ export class MenuSystem extends createSystem({}) {
       // Slow rotation for better viewing
       this.previewHolder.rotation.y += delta * 0.3;
 
-      const editor = this.tab === 'cat' ? this.customizer.mesh : this.loadoutPanel.mesh;
+      const editor = this.tab === 'cat' ? this.presetPanel.mesh! : this.loadoutPanel.mesh;
       for (const hand of ['left', 'right'] as const) {
         const hit = this.updatePointer(hand, [editor]);
         if (hit && hit.uv && this.input.xr.gamepads[hand]?.getButtonDown(InputComponent.Trigger)) {
@@ -126,8 +133,8 @@ export class MenuSystem extends createSystem({}) {
           }
 
           if (this.tab === 'cat') {
-            const a = this.customizer.hitTest(hit.uv.x, hit.uv.y);
-            if (a) this.applyCustomize(a);
+            const a = presetHit(this.presetPanel, hit.uv.x * 512, (1 - hit.uv.y) * 512);
+            if (a) this.applyPresetSelection(a);
           } else {
             const a = this.loadoutPanel.hitTest(hit.uv.x, hit.uv.y);
             if (a) this.applyLoadout(a);
@@ -211,31 +218,32 @@ export class MenuSystem extends createSystem({}) {
 
   // --- customizer ---
 
-  private applyCustomize(action: ReturnType<Customizer['hitTest']>): void {
+  private applyPresetSelection(action: ReturnType<typeof presetHit>): void {
     if (!action) return;
     sfx.ensureAudio();
     sfx.uiClick();
-    if (action.kind === 'tab') {
-      this.setTab(action.to);
-      return;
-    }
-    if (action.kind === 'done') {
-      // Play happy wiggle when confirming
+    
+    if (action.kind === 'select') {
+      const preset = getPreset(action.presetId);
+      if (!preset) return;
+      
+      // Update player skin with preset
+      playerSkin.fur = preset.skin.fur;
+      playerSkin.accent = preset.skin.accent;
+      playerSkin.pattern = preset.skin.pattern;
+      
+      // Update panel state
+      this.presetPanel.selectedId = action.presetId;
+      redrawPresetPanel(this.presetPanel);
+      
+      // Save and rebuild preview
+      saveSkin();
+      this.rebuildPreview();
+      
+      // Play excited bounce when selecting
       const previewCat = this.previewHolder.children[0] as Group | undefined;
-      if (previewCat) playHappyWiggle(previewCat);
-      app.state = 'menu';
-      this.applyState();
-      return;
+      if (previewCat) playExcitedBounce(previewCat);
     }
-    if (action.kind === 'fur') playerSkin.fur = FUR_COLORS[action.i];
-    else if (action.kind === 'accent') playerSkin.accent = ACCENT_COLORS[action.i];
-    else if (action.kind === 'pattern') playerSkin.pattern = PATTERNS[action.i];
-    saveSkin();
-    this.customizer.redraw();
-    this.rebuildPreview();
-    // Play excited bounce when selecting
-    const previewCat = this.previewHolder.children[0] as Group | undefined;
-    if (previewCat) playExcitedBounce(previewCat);
   }
 
   private applyLoadout(action: ReturnType<LoadoutPanel['hitTest']>): void {
@@ -303,7 +311,9 @@ export class MenuSystem extends createSystem({}) {
     const playing = app.state === 'playing';
     const customizing = app.state === 'customize';
     this.menu.setVisible(!playing && !customizing);
-    this.customizer.mesh.visible = customizing && this.tab === 'cat';
+    if (this.presetPanel.mesh) {
+      this.presetPanel.mesh.visible = customizing && this.tab === 'cat';
+    }
     this.loadoutPanel.mesh.visible = customizing && this.tab === 'loadout';
     this.previewHolder.visible = customizing && this.tab === 'cat';
 

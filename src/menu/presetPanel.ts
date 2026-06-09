@@ -4,7 +4,7 @@
  * Much simpler and more intuitive than individual color pickers.
  */
 
-import { CanvasTexture, LinearFilter } from '@iwsdk/core';
+import { CanvasTexture, LinearFilter, type Mesh } from '@iwsdk/core';
 import { drawTabs } from './tabs.js';
 import { CAT_PRESETS, type CatPreset } from './catPresets.js';
 
@@ -24,6 +24,7 @@ export interface PresetPanel {
   texture: CanvasTexture;
   cells: PresetCell[];
   selectedId: string;
+  mesh?: Mesh;
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
@@ -107,7 +108,6 @@ export function createPresetPanel(): PresetPanel {
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
 
   // Build preset cells in a 2x4 grid
   const cells: PresetCell[] = [];
