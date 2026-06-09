@@ -9,6 +9,8 @@ export const AIController = createComponent(
     moveTimer: { type: Types.Float32, default: 1.0 },
     /** Lateral position the opponent is currently strafing toward (local x). */
     targetX: { type: Types.Float32, default: 0 },
+    /** Vertical position the opponent is moving toward (local y, for ducking). */
+    targetY: { type: Types.Float32, default: 1.4 },
   },
   'AI opponent behaviour state.',
 );

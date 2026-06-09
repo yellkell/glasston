@@ -63,7 +63,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: WeaponType.Spread,
-    name: 'Scatter',
+    name: 'Shotty',
     ammo: 5,
     cooldown: 0.6,
     auto: false,
@@ -95,11 +95,11 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: WeaponType.Sniper,
-    name: 'Sniper',
-    ammo: 10,
+    name: 'Snipey',
+    ammo: 3,
     cooldown: 0.16,
     auto: true,
-    damage: 5,
+    damage: 30,
     speed: 7.0, // small + fast
     radius: 0.028,
     pellets: 1,
@@ -141,7 +141,7 @@ export function buildWeaponMesh(arch: Archetype): Group {
   group.add(grip);
 
   if (arch.id === WeaponType.Spread) {
-    // Scatter — wide flat body with three stubby barrels.
+    // Shotty — wide flat body with three stubby barrels.
     const body = new Mesh(new BoxGeometry(0.15, 0.055, 0.1), toy(PALETTE.pink));
     body.position.set(0, 0.012, -0.04);
     group.add(body);
@@ -161,7 +161,7 @@ export function buildWeaponMesh(arch: Archetype): Group {
     cyl(PALETTE.yellow, 0.07, 0.02, 0.012, -0.165);
     cyl(-1, 0.05, 0.012, 0.012, -0.178);
   } else if (arch.id === WeaponType.Sniper) {
-    // Sniper — slim body, long thin barrel, and a scope on top.
+    // Snipey — slim body, long thin barrel, and a scope on top.
     const body = new Mesh(new BoxGeometry(0.045, 0.05, 0.16), toy(PALETTE.teal));
     body.position.set(0, 0.014, -0.05);
     group.add(body);

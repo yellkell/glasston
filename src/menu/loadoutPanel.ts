@@ -12,7 +12,7 @@ import { drawTabs, tabHit, type CustomizeTab } from './tabs.js';
 
 export type LoadoutAction =
   | { kind: 'tab'; to: CustomizeTab }
-  | { kind: 'spot'; i: number }
+  | { kind: 'assign'; spot: number; weapon: number }
   | { kind: 'curve'; t: number }
   | { kind: 'done' };
 
@@ -46,19 +46,28 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 
 function layout(): Cell[] {
   const cells: Cell[] = [];
-  // Six spot cells: 2 columns × 3 rows.
-  const cw = 224, ch = 56, gx = 16, gy = 12, x0 = 24, y0 = 104;
-  for (let i = 0; i < 6; i++) {
-    const c = i % 2;
-    const r = Math.floor(i / 2);
-    cells.push({ x: x0 + c * (cw + gx), y: y0 + r * (ch + gy), w: cw, h: ch, action: { kind: 'spot', i } });
+  // Six spot rows, each with 4 weapon buttons (Popper, Shotty, Lobber, Snipey).
+  const spotH = 68, spotGap = 8, x0 = 24, y0 = 104;
+  const btnW = 108, btnH = 52, btnGap = 8;
+  for (let spot = 0; spot < 6; spot++) {
+    const spotY = y0 + spot * (spotH + spotGap);
+    // Four weapon buttons per spot
+    for (let weapon = 0; weapon < 4; weapon++) {
+      cells.push({
+        x: x0 + weapon * (btnW + btnGap),
+        y: spotY + 16,
+        w: btnW,
+        h: btnH,
+        action: { kind: 'assign', spot, weapon },
+      });
+    }
   }
   // Curve toggles: one row per weapon type.
-  const rh = 46, ry0 = 348;
+  const rh = 46, ry0 = 560;
   for (let t = 0; t < ARCHETYPES.length; t++) {
     cells.push({ x: 24, y: ry0 + t * (rh + 8), w: W - 48, h: rh, action: { kind: 'curve', t } });
   }
-  cells.push({ x: 126, y: 600, w: 260, h: 84, action: { kind: 'done' } });
+  cells.push({ x: 126, y: 680, w: 260, h: 32, action: { kind: 'done' } });
   return cells;
 }
 
@@ -91,35 +100,37 @@ export function createLoadoutPanel(): LoadoutPanel {
     drawTabs(ctx, 'loadout');
 
     ctx.fillStyle = '#6a4fb0';
-    ctx.font = '700 26px system-ui, sans-serif';
+    ctx.font = '700 24px system-ui, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('Weapon in each spot', 26, 90);
-    ctx.fillText('Curve weapons (follow your swing)', 26, 330);
+    ctx.fillText('Choose weapon for each spot', 26, 88);
+    ctx.fillText('Curve weapons (follow your swing)', 26, 544);
     ctx.textAlign = 'center';
+
+    // Draw spot labels on the left
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#8a7bb0';
+    ctx.font = '600 16px system-ui, sans-serif';
+    for (let i = 0; i < 6; i++) {
+      const spotY = 104 + i * 76;
+      ctx.fillText(SPOT_LABELS[i], 26, spotY + 8);
+    }
 
     for (const c of cells) {
       const a = c.action;
-      if (a.kind === 'spot') {
-        const arch = ARCHETYPES[loadout.slots[a.i]] ?? ARCHETYPES[0];
-        roundRect(ctx, c.x, c.y, c.w, c.h, 14);
-        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      if (a.kind === 'assign') {
+        const arch = ARCHETYPES[a.weapon];
+        const selected = loadout.slots[a.spot] === a.weapon;
+        roundRect(ctx, c.x, c.y, c.w, c.h, 12);
+        ctx.fillStyle = selected ? 'rgba(110,224,200,0.4)' : 'rgba(255,255,255,0.88)';
         ctx.fill();
-        roundRect(ctx, c.x, c.y, c.w, c.h, 14);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = 'rgba(120,90,180,0.45)';
+        roundRect(ctx, c.x, c.y, c.w, c.h, 12);
+        ctx.lineWidth = selected ? 4 : 2;
+        ctx.strokeStyle = selected ? '#3ec6e0' : 'rgba(120,90,180,0.35)';
         ctx.stroke();
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#8a7bb0';
-        ctx.font = '600 20px system-ui, sans-serif';
-        ctx.fillText(SPOT_LABELS[a.i], c.x + 16, c.y + 18);
-        ctx.fillStyle = '#5a3fa0';
-        ctx.font = '800 28px system-ui, sans-serif';
-        ctx.fillText(arch.name, c.x + 16, c.y + 40);
-        ctx.fillStyle = '#b0a0d0';
-        ctx.font = '600 22px system-ui, sans-serif';
-        ctx.textAlign = 'right';
-        ctx.fillText('▸', c.x + c.w - 16, c.y + c.h / 2);
         ctx.textAlign = 'center';
+        ctx.fillStyle = selected ? '#2a5a70' : '#5a3fa0';
+        ctx.font = selected ? '800 22px system-ui, sans-serif' : '700 20px system-ui, sans-serif';
+        ctx.fillText(arch.name, c.x + c.w / 2, c.y + c.h / 2 + 1);
       } else if (a.kind === 'curve') {
         const arch = ARCHETYPES[a.t];
         const on = !!loadout.curve[a.t];
@@ -154,15 +165,16 @@ export function createLoadoutPanel(): LoadoutPanel {
         }
         ctx.textAlign = 'center';
       } else if (a.kind === 'done') {
-        roundRect(ctx, c.x, c.y, c.w, c.h, 42);
+        roundRect(ctx, c.x, c.y, c.w, c.h, 16);
         const grad = ctx.createLinearGradient(c.x, c.y, c.x, c.y + c.h);
         grad.addColorStop(0, '#7af0a0');
         grad.addColorStop(1, '#46c87a');
         ctx.fillStyle = grad;
         ctx.fill();
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 48px system-ui, sans-serif';
-        ctx.fillText('DONE', c.x + c.w / 2, c.y + c.h / 2 + 2);
+        ctx.font = '900 28px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('DONE', c.x + c.w / 2, c.y + c.h / 2 + 1);
       }
     }
     texture.needsUpdate = true;

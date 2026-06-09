@@ -141,15 +141,18 @@ export const BLOCK = {
 
 /** Curve weapons: how strongly the controller's swing bends the ball's path. */
 export const CURVE = {
-  strength: 5, // multiplier on the perpendicular swing velocity (m/s²)
-  maxSwing: 3, // clamp the swing speed so flicks don't curve absurdly
+  strength: 2.5, // multiplier on the perpendicular swing velocity (m/s²)
+  maxSwing: 1.8, // clamp the swing speed so flicks don't curve absurdly
 };
 
 /** AI opponent behaviour. */
 export const AI = {
-  bodyY: 1.4, // chest height of the opponent body
+  bodyY: 1.4, // default chest height of the opponent body
+  bodyYMin: 1.0, // minimum height when ducking
+  bodyYMax: 1.5, // maximum height when standing tall
   padHalfWidth: 0.7, // how far the opponent strafes left/right on its pad
   moveSpeed: 1.6, // lateral m/s
+  duckSpeed: 2.0, // vertical m/s (faster than lateral for quick ducks)
   fireInterval: 1.6, // seconds between shots
   projectileSpeed: 3.6,
   damage: 9,

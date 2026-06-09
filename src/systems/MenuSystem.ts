@@ -209,8 +209,8 @@ export class MenuSystem extends createSystem({}) {
       this.applyState();
       return;
     }
-    if (action.kind === 'spot') {
-      loadout.slots[action.i] = (loadout.slots[action.i] + 1) % ARCHETYPES.length;
+    if (action.kind === 'assign') {
+      loadout.slots[action.spot] = action.weapon;
     } else if (action.kind === 'curve') {
       loadout.curve[action.t] = !loadout.curve[action.t];
     }
