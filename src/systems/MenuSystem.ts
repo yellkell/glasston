@@ -25,10 +25,20 @@ import { createCustomizer, type Customizer } from '../menu/customizer.js';
 import { createLoadoutPanel, type LoadoutPanel } from '../menu/loadoutPanel.js';
 import { loadout, saveLoadout } from '../menu/loadout.js';
 import { ARCHETYPES } from '../weapons/archetypes.js';
-import { buildCat } from '../character/cat.js';
+import { buildPreviewCat } from '../character/cat.js';
 import { ACCENT_COLORS, FUR_COLORS, PATTERNS, playerSkin, saveSkin } from '../menu/skin.js';
 import type { CustomizeTab } from '../menu/tabs.js';
 import * as sfx from '../audio/sfx.js';
+import {
+  createCatAnimationState,
+  updateIdleAnimations,
+  updatePawTracking,
+  updateLookAt,
+  playExcitedBounce,
+  playHappyWiggle,
+  type CatAnimationState,
+} from '../character/catAnimations.js';
+import { playPawTapAnimation } from '../character/catPaw.js';
 
 const _origin = new Vector3();
 const _dir = new Vector3();
@@ -50,6 +60,7 @@ export class MenuSystem extends createSystem({}) {
   private hovered: PanelId | null = null;
   private lastState: AppState | null = null;
   private pointers: Record<'left' | 'right', Pointer> = {} as Record<'left' | 'right', Pointer>;
+  private catAnimState: CatAnimationState = createCatAnimationState();
 
   init(): void {
     this.menu = createMenu(this.scene);
@@ -84,11 +95,37 @@ export class MenuSystem extends createSystem({}) {
     }
 
     if (app.state === 'customize') {
-      this.previewHolder.rotation.y += delta * 0.5;
+      // Bongo Cat animations for preview
+      const previewCat = this.previewHolder.children[0] as Group | undefined;
+      if (previewCat && this.tab === 'cat') {
+        // Idle animations (breathing, blinking, ear twitches)
+        updateIdleAnimations(previewCat, this.catAnimState, delta);
+
+        // Paw tracking - get controller grip positions
+        const leftGrip = this.world.playerSpaceEntities.gripSpaces.left?.object3D;
+        const rightGrip = this.world.playerSpaceEntities.gripSpaces.right?.object3D;
+        const leftPos = leftGrip ? new Vector3().setFromMatrixPosition(leftGrip.matrixWorld) : null;
+        const rightPos = rightGrip ? new Vector3().setFromMatrixPosition(rightGrip.matrixWorld) : null;
+        updatePawTracking(previewCat, this.catAnimState, leftPos, rightPos, delta);
+
+        // Look at controller ray intersection
+        const lookTarget = this.pointers.left.dot.visible ? this.pointers.left.dot.position.clone() : null;
+        updateLookAt(previewCat, this.catAnimState, lookTarget, delta);
+      }
+
+      // Slow rotation for better viewing
+      this.previewHolder.rotation.y += delta * 0.3;
+
       const editor = this.tab === 'cat' ? this.customizer.mesh : this.loadoutPanel.mesh;
       for (const hand of ['left', 'right'] as const) {
         const hit = this.updatePointer(hand, [editor]);
         if (hit && hit.uv && this.input.xr.gamepads[hand]?.getButtonDown(InputComponent.Trigger)) {
+          // Play paw tap animation on trigger press
+          if (previewCat && this.tab === 'cat') {
+            const paw = previewCat.children.find(c => c.name === `${hand}-paw`);
+            if (paw) playPawTapAnimation(paw);
+          }
+
           if (this.tab === 'cat') {
             const a = this.customizer.hitTest(hit.uv.x, hit.uv.y);
             if (a) this.applyCustomize(a);
@@ -184,6 +221,9 @@ export class MenuSystem extends createSystem({}) {
       return;
     }
     if (action.kind === 'done') {
+      // Play happy wiggle when confirming
+      const previewCat = this.previewHolder.children[0] as Group | undefined;
+      if (previewCat) playHappyWiggle(previewCat);
       app.state = 'menu';
       this.applyState();
       return;
@@ -194,6 +234,9 @@ export class MenuSystem extends createSystem({}) {
     saveSkin();
     this.customizer.redraw();
     this.rebuildPreview();
+    // Play excited bounce when selecting
+    const previewCat = this.previewHolder.children[0] as Group | undefined;
+    if (previewCat) playExcitedBounce(previewCat);
   }
 
   private applyLoadout(action: ReturnType<LoadoutPanel['hitTest']>): void {
@@ -233,9 +276,12 @@ export class MenuSystem extends createSystem({}) {
       });
       this.previewHolder.remove(child);
     }
-    const cat = buildCat(playerSkin);
+    // Use preview cat with Bongo Cat paws
+    const cat = buildPreviewCat(playerSkin);
     cat.scale.setScalar(1.3);
     this.previewHolder.add(cat);
+    // Reset animation state
+    this.catAnimState = createCatAnimationState();
   }
 
   // --- transitions + visibility ---

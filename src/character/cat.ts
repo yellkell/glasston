@@ -19,6 +19,7 @@ import {
 import { COMBAT } from '../config.js';
 import { makeGlass } from '../materials/glass.js';
 import type { Skin } from '../menu/skin.js';
+import { buildCatPaw } from './catPaw.js';
 
 /** Darken a hex colour by factor f (0..1). */
 function shade(hex: number, f: number): string {
@@ -90,12 +91,14 @@ export function buildCat(skin: Skin): Group {
 
   // Body — slimmer, slightly tall egg shape (patterned).
   const body = new Mesh(new SphereGeometry(r, 28, 22), furMat());
+  body.name = 'body';
   body.scale.set(0.8, 1.18, 0.78);
   group.add(body);
 
-  // Stubby paws nudged forward (+Z).
+  // Stubby paws nudged forward (+Z) - for the standing cat body.
   for (const side of [-1, 1]) {
     const paw = new Mesh(new SphereGeometry(r * 0.22, 14, 12), furPlain());
+    paw.name = side < 0 ? 'left-foot' : 'right-foot';
     paw.position.set(side * r * 0.66, -r * 0.1, r * 0.35);
     group.add(paw);
   }
@@ -104,6 +107,7 @@ export function buildCat(skin: Skin): Group {
   const headR = r * 0.92;
   const headY = r * 1.15;
   const head = new Mesh(new SphereGeometry(headR, 28, 22), furMat());
+  head.name = 'head';
   head.position.set(0, headY, 0);
   head.scale.set(1.05, 1, 0.98);
   group.add(head);
@@ -111,6 +115,7 @@ export function buildCat(skin: Skin): Group {
   // Ears — pink-lined triangles.
   for (const side of [-1, 1]) {
     const ear = new Mesh(new ConeGeometry(headR * 0.4, headR * 0.95, 18), furPlain());
+    ear.name = side < 0 ? 'left-ear' : 'right-ear';
     ear.scale.set(1, 1, 0.45);
     ear.position.set(side * headR * 0.52, headY + headR * 0.86, headR * 0.05);
     ear.rotation.set(0.12, 0, side * -0.22);
@@ -126,6 +131,7 @@ export function buildCat(skin: Skin): Group {
   const eyeZ = headR * 0.9;
   for (const side of [-1, 1]) {
     const eye = new Mesh(new SphereGeometry(headR * 0.26, 18, 16), dark);
+    eye.name = side < 0 ? 'left-eye' : 'right-eye';
     eye.scale.set(0.85, 1.1, 0.7);
     eye.position.set(side * headR * 0.36, headY + headR * 0.06, eyeZ);
     group.add(eye);
@@ -144,4 +150,27 @@ export function buildCat(skin: Skin): Group {
   group.add(mouth);
 
   return group;
+}
+
+/**
+ * Build a preview cat for the customization menu with animated Bongo Cat-style
+ * paws that can track controller positions.
+ */
+export function buildPreviewCat(skin: Skin): Group {
+  const cat = buildCat(skin);
+
+  // Add Bongo Cat-style paws for the preview (positioned in front, ready to wave)
+  const leftPaw = buildCatPaw(skin);
+  leftPaw.name = 'left-paw';
+  leftPaw.position.set(-0.15, 0.05, 0.4);
+  leftPaw.scale.setScalar(1.2); // Slightly larger for visibility
+  cat.add(leftPaw);
+
+  const rightPaw = buildCatPaw(skin);
+  rightPaw.name = 'right-paw';
+  rightPaw.position.set(0.15, 0.05, 0.4);
+  rightPaw.scale.setScalar(1.2);
+  cat.add(rightPaw);
+
+  return cat;
 }
