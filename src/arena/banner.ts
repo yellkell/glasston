@@ -90,8 +90,10 @@ export function createTitleBanner(scene: Scene): Mesh {
     new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, opacity: 0.96 }),
   );
   // Sits above the lobby menu panels; MenuSystem hides it during a match.
-  banner.position.set(0, 2.5, -1.8);
+  // Moved further back and higher to avoid obscuring menu elements
+  banner.position.set(0, 3.0, -2.5);
   banner.name = 'title-banner';
+  banner.renderOrder = -1; // Render behind other UI elements
   scene.add(banner);
   return banner;
 }

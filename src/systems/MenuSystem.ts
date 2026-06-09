@@ -24,7 +24,6 @@ import { createMenu, type Menu, type PanelId } from '../menu/menu.js';
 import { createCustomizer, type Customizer } from '../menu/customizer.js';
 import { createLoadoutPanel, type LoadoutPanel } from '../menu/loadoutPanel.js';
 import { loadout, saveLoadout } from '../menu/loadout.js';
-import { ARCHETYPES } from '../weapons/archetypes.js';
 import { buildPreviewCat } from '../character/cat.js';
 import { ACCENT_COLORS, FUR_COLORS, PATTERNS, playerSkin, saveSkin } from '../menu/skin.js';
 import type { CustomizeTab } from '../menu/tabs.js';

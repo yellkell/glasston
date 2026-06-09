@@ -50,9 +50,8 @@ export function createCatAnimationState(): CatAnimationState {
  * Update idle animations: breathing, blinking, ear twitches.
  */
 export function updateIdleAnimations(cat: Group, state: CatAnimationState, delta: number): void {
-  // Find body and head (assuming they're named in buildCat)
+  // Find body parts (assuming they're named in buildCat)
   const body = cat.children.find(c => c instanceof Object3D && c.name !== 'cat-paw');
-  const head = cat.children.find(c => c.name === 'head');
   const leftEar = cat.children.find(c => c.name === 'left-ear');
   const rightEar = cat.children.find(c => c.name === 'right-ear');
 
