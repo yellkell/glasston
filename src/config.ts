@@ -141,8 +141,8 @@ export const BLOCK = {
 
 /** Curve weapons: how strongly the controller's swing bends the ball's path. */
 export const CURVE = {
-  strength: 2.5, // multiplier on the perpendicular swing velocity (m/s²)
-  maxSwing: 1.8, // clamp the swing speed so flicks don't curve absurdly
+  strength: 3.5, // multiplier on the perpendicular swing velocity (m/s²)
+  maxSwing: 2.2, // clamp the swing speed so flicks don't curve absurdly
 };
 
 /** AI opponent behaviour. */

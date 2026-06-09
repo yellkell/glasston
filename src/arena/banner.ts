@@ -62,8 +62,8 @@ export function createTitleBanner(scene: Scene): Mesh {
     ctx.fill();
   }
 
-  // Logo.
-  bubbleText(ctx, 'Play', W / 2 - 250, 150, 92);
+  // Logo - moved "Play" higher to avoid menu overlap.
+  bubbleText(ctx, 'Play', W / 2 - 250, 120, 92);
   bubbleText(ctx, 'BLASTO!', W / 2 + 70, 175, 150);
 
   // Scalloped purple cloud band along the bottom.
