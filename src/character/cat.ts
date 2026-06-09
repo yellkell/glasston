@@ -10,11 +10,13 @@ import {
   CanvasTexture,
   Color,
   ConeGeometry,
+  CylinderGeometry,
   Group,
   Mesh,
   MeshBasicMaterial,
   MeshPhysicalMaterial,
   SphereGeometry,
+  TorusGeometry,
 } from '@iwsdk/core';
 import { COMBAT } from '../config.js';
 import { makeGlass } from '../materials/glass.js';
@@ -138,18 +140,66 @@ export function buildCat(skin: Skin): Group {
     group.add(eye);
     // Larger, more prominent sparkle (0.07 → 0.10)
     const spark = new Mesh(new SphereGeometry(headR * 0.10, 12, 10), shine());
+    spark.name = side < 0 ? 'left-sparkle' : 'right-sparkle';
     spark.position.set(side * headR * 0.44, headY + headR * 0.20, eyeZ + headR * 0.14);
     group.add(spark);
   }
 
-  // Slightly larger, cuter nose and mouth.
+  // Rosy blush under each eye (Bongo Cat cheeks).
+  const blushMat = new MeshBasicMaterial({ color: 0xff8fcf, transparent: true, opacity: 0.55 });
+  for (const side of [-1, 1]) {
+    const blush = new Mesh(new SphereGeometry(headR * 0.14, 14, 12), blushMat);
+    blush.name = side < 0 ? 'left-blush' : 'right-blush';
+    blush.scale.set(1.2, 0.65, 0.4);
+    blush.position.set(side * headR * 0.6, headY - headR * 0.18, headR * 0.82);
+    group.add(blush);
+  }
+
+  // Slightly larger, cuter nose.
   const nose = new Mesh(new SphereGeometry(headR * 0.10, 14, 12), accent());
   nose.position.set(0, headY - headR * 0.14, headR * 0.98);
   group.add(nose);
-  const mouth = new Mesh(new SphereGeometry(headR * 0.10, 16, 14), dark);
-  mouth.scale.set(1.15, 0.65, 0.55);
-  mouth.position.set(0, headY - headR * 0.32, headR * 0.91);
+
+  // ":3" mouth — two tiny smile arcs under the nose instead of the old dark blob.
+  const mouth = new Group();
+  mouth.name = 'mouth';
+  for (const side of [-1, 1]) {
+    const arc = new Mesh(
+      new TorusGeometry(headR * 0.11, headR * 0.025, 8, 16, Math.PI * 0.9),
+      dark,
+    );
+    // Torus arc starts at +X going CCW; PI*1.05 start leaves the opening upward.
+    arc.rotation.z = Math.PI * 1.05;
+    arc.position.set(side * headR * 0.105, headY - headR * 0.3, headR * 0.94);
+    mouth.add(arc);
+  }
   group.add(mouth);
+
+  // Whiskers — three thin strands per cheek.
+  const whiskerMat = new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+  for (const side of [-1, 1]) {
+    for (let i = -1; i <= 1; i++) {
+      const w = new Mesh(new CylinderGeometry(headR * 0.008, 0.002, headR * 0.72, 5), whiskerMat);
+      w.rotation.z = side * (Math.PI / 2 + 0.12 * i + 0.08);
+      w.position.set(side * headR * 0.82, headY - headR * 0.16 + i * headR * 0.09, headR * 0.62);
+      group.add(w);
+    }
+  }
+
+  // Curled tail behind the body: a chain of shrinking spheres with an accent tip.
+  const tail = new Group();
+  tail.name = 'tail';
+  const tailSegs = 6;
+  for (let i = 0; i < tailSegs; i++) {
+    const t = i / (tailSegs - 1);
+    const segR = r * (0.16 - 0.06 * t);
+    const seg = new Mesh(new SphereGeometry(segR, 12, 10), i === tailSegs - 1 ? accent() : furPlain());
+    // Sweep up and curl over, behind the body (-Z).
+    const ang = t * Math.PI * 0.9;
+    seg.position.set(0, -r * 0.5 + Math.sin(ang) * r * 0.85, -r * 0.72 - Math.cos(ang) * r * 0.3 + t * r * 0.12);
+    tail.add(seg);
+  }
+  group.add(tail);
 
   return group;
 }

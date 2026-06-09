@@ -50,16 +50,17 @@ export function createCatAnimationState(): CatAnimationState {
  * Update idle animations: breathing, blinking, ear twitches.
  */
 export function updateIdleAnimations(cat: Group, state: CatAnimationState, delta: number): void {
-  // Find body parts (assuming they're named in buildCat)
-  const body = cat.children.find(c => c instanceof Object3D && c.name !== 'cat-paw');
+  const body = cat.children.find(c => c.name === 'body');
   const leftEar = cat.children.find(c => c.name === 'left-ear');
   const rightEar = cat.children.find(c => c.name === 'right-ear');
 
-  // Breathing animation (gentle scale pulse)
+  // Breathing animation: a gentle pulse MULTIPLIED onto the model's base scale
+  // (buildCat squashes the body to an egg shape — overwriting scale.y flattened it).
   state.breathePhase += delta * 1.5;
   const breathe = 1 + Math.sin(state.breathePhase) * 0.015;
   if (body) {
-    body.scale.y = breathe;
+    rememberBaseScale(body);
+    body.scale.y = (body.userData.baseScaleY as number) * breathe;
   }
 
   // Blinking animation
@@ -78,13 +79,14 @@ export function updateIdleAnimations(cat: Group, state: CatAnimationState, delta
     const blinkProgress = Math.max(0, state.blinkDuration / 0.15);
     const eyeScaleY = blinkProgress < 0.5 ? blinkProgress * 2 : (1 - blinkProgress) * 2;
     for (const eye of eyes) {
-      eye.scale.y = 0.2 + eyeScaleY * 0.8; // close to 20% height
+      rememberBaseScale(eye);
+      eye.scale.y = (eye.userData.baseScaleY as number) * (0.2 + eyeScaleY * 0.8); // close to 20% height
     }
     if (state.blinkDuration <= 0) {
       state.isBlinking = false;
-      // Reset eye scale
+      // Reset eyes to their modelled scale
       for (const eye of eyes) {
-        eye.scale.y = 1;
+        eye.scale.y = eye.userData.baseScaleY as number;
       }
     }
   }
@@ -99,6 +101,11 @@ export function updateIdleAnimations(cat: Group, state: CatAnimationState, delta
       animateEarTwitch(ear);
     }
   }
+}
+
+/** Stash an object's authored scale.y the first time we animate it. */
+function rememberBaseScale(o: Object3D): void {
+  if (typeof o.userData.baseScaleY !== 'number') o.userData.baseScaleY = o.scale.y;
 }
 
 /**
@@ -147,25 +154,19 @@ export function updatePawTracking(
   const leftPaw = cat.children.find(c => c.name === 'left-paw');
   const rightPaw = cat.children.find(c => c.name === 'right-paw');
 
-  // Convert world space controller positions to local cat space
-  const catWorldPos = new Vector3();
-  cat.parent?.getWorldPosition(catWorldPos);
-
-  // Update targets with proper coordinate conversion
+  // Convert world-space controller positions into the cat's LOCAL space with
+  // worldToLocal — a plain subtraction ignored the preview holder's spin and
+  // the cat's scale, so the paws drifted as the preview rotated.
   if (leftController && leftPaw) {
-    // Convert to local space relative to cat
-    const localPos = leftController.clone().sub(catWorldPos);
-    // Clamp to reasonable range
+    const localPos = cat.worldToLocal(leftController.clone());
     localPos.x = Math.max(-0.3, Math.min(0.3, localPos.x));
     localPos.y = Math.max(-0.3, Math.min(0.2, localPos.y));
     localPos.z = Math.max(0.2, Math.min(0.5, localPos.z));
     state.leftPawTarget.copy(localPos);
   }
-  
+
   if (rightController && rightPaw) {
-    // Convert to local space relative to cat
-    const localPos = rightController.clone().sub(catWorldPos);
-    // Clamp to reasonable range
+    const localPos = cat.worldToLocal(rightController.clone());
     localPos.x = Math.max(-0.3, Math.min(0.3, localPos.x));
     localPos.y = Math.max(-0.3, Math.min(0.2, localPos.y));
     localPos.z = Math.max(0.2, Math.min(0.5, localPos.z));
@@ -200,8 +201,10 @@ export function updateLookAt(cat: Group, state: CatAnimationState, target: Vecto
   state.lookAtTarget = target;
 
   if (target) {
-    // Smoothly rotate head to look at target
-    const direction = new Vector3().subVectors(target, head.position).normalize();
+    // Smoothly rotate head to look at target (converted into cat-local space —
+    // the head's position is local, so mixing in a world-space target skewed it).
+    const localTarget = cat.worldToLocal(target.clone());
+    const direction = new Vector3().subVectors(localTarget, head.position).normalize();
     const targetRotY = Math.atan2(direction.x, direction.z);
     const targetRotX = Math.asin(-direction.y);
 
@@ -226,6 +229,7 @@ export function updateLookAt(cat: Group, state: CatAnimationState, target: Vecto
  */
 export function playExcitedBounce(cat: Group): void {
   const startY = cat.position.y;
+  const base = cat.scale.x; // respect the preview's 1.3x base scale
   const bounceHeight = 0.08;
   const duration = 0.4;
   const startTime = performance.now();
@@ -238,17 +242,18 @@ export function playExcitedBounce(cat: Group): void {
     const bounce = Math.sin(t * Math.PI) * bounceHeight;
     cat.position.y = startY + bounce;
 
-    // Slight squash and stretch
+    // Slight squash and stretch around the base scale (resetting to 1 used to
+    // shrink the preview cat after its first bounce).
     const squash = 1 + Math.sin(t * Math.PI * 2) * 0.05;
-    cat.scale.y = squash;
-    cat.scale.x = 2 - squash;
-    cat.scale.z = 2 - squash;
+    cat.scale.y = base * squash;
+    cat.scale.x = base * (2 - squash);
+    cat.scale.z = base * (2 - squash);
 
     if (t < 1) {
       requestAnimationFrame(animate);
     } else {
       cat.position.y = startY;
-      cat.scale.set(1, 1, 1);
+      cat.scale.set(base, base, base);
     }
   };
 

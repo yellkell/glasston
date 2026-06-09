@@ -83,9 +83,28 @@ export function createLoadoutPanel(): LoadoutPanel {
   mesh.name = 'loadout-panel';
 
   const cells = layout();
-  let selectedSlot: number | null = null;
 
-  const redraw = (): void => {
+  // `panel` is declared up front so redraw() always reads the live
+  // selectedSlot that MenuSystem mutates (a closure-local copy here meant the
+  // selection highlight never rendered).
+  const panel: LoadoutPanel = {
+    mesh,
+    selectedSlot: null,
+    redraw: () => draw(),
+    hitTest: (u: number, v: number): LoadoutAction | null => {
+      const px = u * W;
+      const py = (1 - v) * H;
+      const tab = tabHit(px, py);
+      if (tab) return { kind: 'tab', to: tab };
+      for (const c of cells) {
+        if (px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + c.h) return c.action;
+      }
+      return null;
+    },
+  };
+
+  const draw = (): void => {
+    const selectedSlot = panel.selectedSlot;
     ctx.clearRect(0, 0, W, H);
     const bg = ctx.createLinearGradient(0, 0, 0, H);
     bg.addColorStop(0, 'rgba(255,255,255,0.9)');
@@ -196,22 +215,6 @@ export function createLoadoutPanel(): LoadoutPanel {
     texture.needsUpdate = true;
   };
 
-  const hitTest = (u: number, v: number): LoadoutAction | null => {
-    const px = u * W;
-    const py = (1 - v) * H;
-    const tab = tabHit(px, py);
-    if (tab) return { kind: 'tab', to: tab };
-    for (const c of cells) {
-      if (px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + c.h) return c.action;
-    }
-    return null;
-  };
-
-  redraw();
-  return {
-    mesh,
-    selectedSlot: null,
-    redraw,
-    hitTest
-  };
+  panel.redraw();
+  return panel;
 }

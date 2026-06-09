@@ -26,6 +26,7 @@ import { GameStateSystem } from './systems/GameStateSystem.js';
 import { PlayerBodySystem } from './systems/PlayerBodySystem.js';
 import { MenuSystem } from './systems/MenuSystem.js';
 import { PlayerFeedbackSystem } from './systems/PlayerFeedbackSystem.js';
+import { PlayerPawSystem } from './systems/PlayerPawSystem.js';
 
 const container = document.getElementById('scene-container') as HTMLDivElement;
 
@@ -73,6 +74,8 @@ World.create(container, {
   world.registerSystem(MenuSystem);
   // Player damage feedback: head-locked red vignette on getting hit.
   world.registerSystem(PlayerFeedbackSystem);
+  // Kawaii cat paws on your controllers during matches, matching your skin.
+  world.registerSystem(PlayerPawSystem);
   // Phase 6 — animate transient FX and the ambient emissive pulse.
   world.registerSystem(FXSystem);
 

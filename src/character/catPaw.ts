@@ -5,7 +5,6 @@
  */
 
 import {
-  BoxGeometry,
   Group,
   Mesh,
   SphereGeometry,
@@ -30,16 +29,12 @@ export function buildCatPaw(skin: Skin): Group {
   const fur = () => makeGlass({ color: furColor, roughness: 0.5, emissiveIntensity: 0.04 });
   const bean = () => makeGlass({ color: accentColor, roughness: 0.4, emissive: accentColor, emissiveIntensity: 0.2 });
 
-  // Main paw pad (rounded rectangle)
+  // Main paw pad: a softly squashed sphere.
   const palmW = 0.06;
   const palmH = 0.04;
   const palmD = 0.08;
-  const palm = new Mesh(new BoxGeometry(palmW, palmH, palmD), fur());
-  palm.position.set(0, 0, 0);
-  // Round the corners by scaling a sphere over it
   const palmRound = new Mesh(new SphereGeometry(palmW * 0.7, 16, 12), fur());
   palmRound.scale.set(1, 0.6, 1.2);
-  palmRound.position.copy(palm.position);
   group.add(palmRound);
 
   // Large center pad (main toe bean)
@@ -66,6 +61,7 @@ export function buildCatPaw(skin: Skin): Group {
   // Rotate the paw so it's oriented correctly when attached to controller
   // Controller forward is -Z, we want paw palm facing down (-Y) and fingers forward
   group.rotation.x = Math.PI / 2;
+  group.userData.baseRotX = group.rotation.x; // grip-curl animates relative to this
 
   return group;
 }
@@ -108,8 +104,11 @@ export function playPawTapAnimation(paw: Object3D, duration = 0.15): void {
  * rotates fingers inward.
  */
 export function setPawGrip(paw: Object3D, gripping: boolean, duration = 0.1): void {
+  // Curl relative to the paw's authored orientation (π/2 toward the controller)
+  // — an absolute 0.15 target used to fold the whole paw flat.
+  const base = typeof paw.userData.baseRotX === 'number' ? (paw.userData.baseRotX as number) : paw.rotation.x;
   const targetScale = gripping ? 0.9 : 1.0;
-  const targetRotX = gripping ? 0.15 : 0;
+  const targetRotX = base + (gripping ? 0.15 : 0);
   const startScale = paw.scale.x;
   const startRotX = paw.rotation.x;
   const startTime = performance.now();

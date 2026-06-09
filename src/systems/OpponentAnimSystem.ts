@@ -10,11 +10,12 @@
  * the cat is to hit. Runs only during a live match.
  */
 
-import { createSystem, type Entity } from '@iwsdk/core';
+import { createSystem, type Entity, type Group } from '@iwsdk/core';
 import { AIController } from '../components/AIController.js';
 import { Health } from '../components/Health.js';
 import { app } from '../menu/appState.js';
 import { AI } from '../config.js';
+import { applyExpression, type Expression } from '../character/expressions.js';
 
 interface AnimState {
   t: number;
@@ -22,6 +23,7 @@ interface AnimState {
   prevHp: number;
   recoil: number; // 0..1, decays after a shot
   flinch: number; // 0..1, decays after a hit
+  expression: Expression;
 }
 
 const WINDUP = 0.32; // seconds of tell before a shot
@@ -40,7 +42,14 @@ export class OpponentAnimSystem extends createSystem({
 
       let s = this.state.get(e);
       if (!s) {
-        s = { t: 0, prevFire: 0, prevHp: e.getValue(Health, 'current') ?? 100, recoil: 0, flinch: 0 };
+        s = {
+          t: 0,
+          prevFire: 0,
+          prevHp: e.getValue(Health, 'current') ?? 100,
+          recoil: 0,
+          flinch: 0,
+          expression: 'neutral',
+        };
         this.state.set(e, s);
       }
       s.t += delta;
@@ -68,6 +77,15 @@ export class OpponentAnimSystem extends createSystem({
       const sy = breathe * (1 - 0.14 * windup + 0.12 * s.recoil - 0.14 * s.flinch);
       const sxz = breathe * (1 + 0.1 * windup - 0.06 * s.recoil + 0.1 * s.flinch);
       obj.scale.set(sxz, sy, sxz);
+
+      // Facial expression layered on the same cues: shock when hit, focus
+      // during the wind-up tell, a happy grin right after firing.
+      const expression: Expression =
+        s.flinch > 0.25 ? 'surprised' : windup > 0.2 ? 'determined' : s.recoil > 0.45 ? 'happy' : 'neutral';
+      if (expression !== s.expression) {
+        s.expression = expression;
+        applyExpression(obj as Group, expression);
+      }
     }
   }
 }
