@@ -13,6 +13,8 @@ import { drawTabs, tabHit, type CustomizeTab } from './tabs.js';
 export type LoadoutAction =
   | { kind: 'tab'; to: CustomizeTab }
   | { kind: 'assign'; spot: number; weapon: number }
+  | { kind: 'select'; spot: number }
+  | { kind: 'swap'; fromSpot: number; toSpot: number }
   | { kind: 'curve'; t: number }
   | { kind: 'done' };
 
@@ -30,6 +32,7 @@ const SPOT_LABELS = ['Front L', 'Front R', 'Mid L', 'Mid R', 'Back L', 'Back R']
 
 export interface LoadoutPanel {
   mesh: Mesh;
+  selectedSlot: number | null;
   redraw: () => void;
   hitTest: (u: number, v: number) => LoadoutAction | null;
 }
@@ -46,21 +49,18 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 
 function layout(): Cell[] {
   const cells: Cell[] = [];
-  // Six spot rows, each with 4 weapon buttons (Popper, Shotty, Lobber, Snipey).
+  // Six spot rows - now each row is a single clickable area for selection/swapping
   const spotH = 68, spotGap = 8, x0 = 24, y0 = 104;
-  const btnW = 108, btnH = 52, btnGap = 8;
+  const spotW = W - 48;
   for (let spot = 0; spot < 6; spot++) {
     const spotY = y0 + spot * (spotH + spotGap);
-    // Four weapon buttons per spot
-    for (let weapon = 0; weapon < 4; weapon++) {
-      cells.push({
-        x: x0 + weapon * (btnW + btnGap),
-        y: spotY + 16,
-        w: btnW,
-        h: btnH,
-        action: { kind: 'assign', spot, weapon },
-      });
-    }
+    cells.push({
+      x: x0,
+      y: spotY,
+      w: spotW,
+      h: spotH,
+      action: { kind: 'select', spot },
+    });
   }
   // Curve toggles: one row per weapon type.
   const rh = 46, ry0 = 560;
@@ -83,6 +83,7 @@ export function createLoadoutPanel(): LoadoutPanel {
   mesh.name = 'loadout-panel';
 
   const cells = layout();
+  let selectedSlot: number | null = null;
 
   const redraw = (): void => {
     ctx.clearRect(0, 0, W, H);
@@ -102,35 +103,50 @@ export function createLoadoutPanel(): LoadoutPanel {
     ctx.fillStyle = '#6a4fb0';
     ctx.font = '700 24px system-ui, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('Choose weapon for each spot', 26, 88);
+    const instructionText = selectedSlot !== null
+      ? 'Click another slot to swap weapons'
+      : 'Click a slot to select, then another to swap';
+    ctx.fillText(instructionText, 26, 88);
     ctx.fillText('Curve weapons (follow your swing)', 26, 544);
     ctx.textAlign = 'center';
 
-    // Draw spot labels on the left
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#8a7bb0';
-    ctx.font = '600 16px system-ui, sans-serif';
-    for (let i = 0; i < 6; i++) {
-      const spotY = 104 + i * 76;
-      ctx.fillText(SPOT_LABELS[i], 26, spotY + 8);
-    }
-
+    // Draw weapon slots
     for (const c of cells) {
       const a = c.action;
-      if (a.kind === 'assign') {
-        const arch = ARCHETYPES[a.weapon];
-        const selected = loadout.slots[a.spot] === a.weapon;
-        roundRect(ctx, c.x, c.y, c.w, c.h, 12);
-        ctx.fillStyle = selected ? 'rgba(110,224,200,0.4)' : 'rgba(255,255,255,0.88)';
+      if (a.kind === 'select') {
+        const spot = a.spot;
+        const weaponIdx = loadout.slots[spot];
+        const arch = ARCHETYPES[weaponIdx];
+        const isSelected = selectedSlot === spot;
+        
+        // Slot background
+        roundRect(ctx, c.x, c.y, c.w, c.h, 14);
+        if (isSelected) {
+          // Glowing purple for selected slot
+          ctx.fillStyle = 'rgba(185,140,255,0.5)';
+        } else {
+          ctx.fillStyle = 'rgba(255,255,255,0.88)';
+        }
         ctx.fill();
-        roundRect(ctx, c.x, c.y, c.w, c.h, 12);
-        ctx.lineWidth = selected ? 4 : 2;
-        ctx.strokeStyle = selected ? '#3ec6e0' : 'rgba(120,90,180,0.35)';
+        
+        // Border
+        roundRect(ctx, c.x, c.y, c.w, c.h, 14);
+        ctx.lineWidth = isSelected ? 5 : 2;
+        ctx.strokeStyle = isSelected ? '#b98cff' : 'rgba(120,90,180,0.35)';
         ctx.stroke();
+        
+        // Slot label
+        ctx.textAlign = 'left';
+        ctx.fillStyle = isSelected ? '#6a4fb0' : '#8a7bb0';
+        ctx.font = '600 18px system-ui, sans-serif';
+        ctx.fillText(SPOT_LABELS[spot], c.x + 16, c.y + 22);
+        
+        // Weapon name (large, centered)
         ctx.textAlign = 'center';
-        ctx.fillStyle = selected ? '#2a5a70' : '#5a3fa0';
-        ctx.font = selected ? '800 22px system-ui, sans-serif' : '700 20px system-ui, sans-serif';
-        ctx.fillText(arch.name, c.x + c.w / 2, c.y + c.h / 2 + 1);
+        ctx.fillStyle = isSelected ? '#5a3fa0' : '#6a4fb0';
+        ctx.font = isSelected ? '900 32px system-ui, sans-serif' : '800 28px system-ui, sans-serif';
+        ctx.fillText(arch.name, c.x + c.w / 2, c.y + c.h / 2 + 4);
+        
       } else if (a.kind === 'curve') {
         const arch = ARCHETYPES[a.t];
         const on = !!loadout.curve[a.t];
@@ -192,5 +208,10 @@ export function createLoadoutPanel(): LoadoutPanel {
   };
 
   redraw();
-  return { mesh, redraw, hitTest };
+  return {
+    mesh,
+    selectedSlot: null,
+    redraw,
+    hitTest
+  };
 }

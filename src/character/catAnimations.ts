@@ -147,12 +147,29 @@ export function updatePawTracking(
   const leftPaw = cat.children.find(c => c.name === 'left-paw');
   const rightPaw = cat.children.find(c => c.name === 'right-paw');
 
-  // Update targets
-  if (leftController) {
-    state.leftPawTarget.copy(leftController);
+  // Convert world space controller positions to local cat space
+  const catWorldPos = new Vector3();
+  cat.parent?.getWorldPosition(catWorldPos);
+
+  // Update targets with proper coordinate conversion
+  if (leftController && leftPaw) {
+    // Convert to local space relative to cat
+    const localPos = leftController.clone().sub(catWorldPos);
+    // Clamp to reasonable range
+    localPos.x = Math.max(-0.3, Math.min(0.3, localPos.x));
+    localPos.y = Math.max(-0.3, Math.min(0.2, localPos.y));
+    localPos.z = Math.max(0.2, Math.min(0.5, localPos.z));
+    state.leftPawTarget.copy(localPos);
   }
-  if (rightController) {
-    state.rightPawTarget.copy(rightController);
+  
+  if (rightController && rightPaw) {
+    // Convert to local space relative to cat
+    const localPos = rightController.clone().sub(catWorldPos);
+    // Clamp to reasonable range
+    localPos.x = Math.max(-0.3, Math.min(0.3, localPos.x));
+    localPos.y = Math.max(-0.3, Math.min(0.2, localPos.y));
+    localPos.z = Math.max(0.2, Math.min(0.5, localPos.z));
+    state.rightPawTarget.copy(localPos);
   }
 
   // Smoothly move paws toward targets

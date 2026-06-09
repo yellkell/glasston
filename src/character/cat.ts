@@ -103,13 +103,13 @@ export function buildCat(skin: Skin): Group {
     group.add(paw);
   }
 
-  // Big round head (patterned).
-  const headR = r * 0.92;
-  const headY = r * 1.15;
-  const head = new Mesh(new SphereGeometry(headR, 28, 22), furMat());
+  // Bigger, rounder head for more kawaii proportions (patterned).
+  const headR = r * 1.05;
+  const headY = r * 1.2;
+  const head = new Mesh(new SphereGeometry(headR, 32, 24), furMat());
   head.name = 'head';
   head.position.set(0, headY, 0);
-  head.scale.set(1.05, 1, 0.98);
+  head.scale.set(1.08, 1.02, 1.0);
   group.add(head);
 
   // Ears — pink-lined triangles.
@@ -125,28 +125,30 @@ export function buildCat(skin: Skin): Group {
     group.add(ear);
   }
 
-  // Eyes — big glossy dark ovals with a bright sparkle.
-  const dark = makeGlass({ color: 0x2a2336, roughness: 0.08, emissiveIntensity: 0 });
+  // Much bigger, more expressive eyes with larger sparkles for kawaii appeal.
+  const dark = makeGlass({ color: 0x2a2336, roughness: 0.05, emissiveIntensity: 0 });
   const shine = () => new MeshBasicMaterial({ color: 0xffffff });
-  const eyeZ = headR * 0.9;
+  const eyeZ = headR * 0.88;
   for (const side of [-1, 1]) {
-    const eye = new Mesh(new SphereGeometry(headR * 0.26, 18, 16), dark);
+    // Larger eyes (0.26 → 0.34)
+    const eye = new Mesh(new SphereGeometry(headR * 0.34, 20, 18), dark);
     eye.name = side < 0 ? 'left-eye' : 'right-eye';
-    eye.scale.set(0.85, 1.1, 0.7);
-    eye.position.set(side * headR * 0.36, headY + headR * 0.06, eyeZ);
+    eye.scale.set(0.9, 1.15, 0.75);
+    eye.position.set(side * headR * 0.38, headY + headR * 0.08, eyeZ);
     group.add(eye);
-    const spark = new Mesh(new SphereGeometry(headR * 0.07, 10, 8), shine());
-    spark.position.set(side * headR * 0.42, headY + headR * 0.16, eyeZ + headR * 0.12);
+    // Larger, more prominent sparkle (0.07 → 0.10)
+    const spark = new Mesh(new SphereGeometry(headR * 0.10, 12, 10), shine());
+    spark.position.set(side * headR * 0.44, headY + headR * 0.20, eyeZ + headR * 0.14);
     group.add(spark);
   }
 
-  // Nose + a small dark mouth (no tongue/cheeks).
-  const nose = new Mesh(new SphereGeometry(headR * 0.09, 12, 10), accent());
-  nose.position.set(0, headY - headR * 0.16, headR * 1.0);
+  // Slightly larger, cuter nose and mouth.
+  const nose = new Mesh(new SphereGeometry(headR * 0.10, 14, 12), accent());
+  nose.position.set(0, headY - headR * 0.14, headR * 0.98);
   group.add(nose);
-  const mouth = new Mesh(new SphereGeometry(headR * 0.09, 14, 12), dark);
-  mouth.scale.set(1.1, 0.6, 0.5);
-  mouth.position.set(0, headY - headR * 0.34, headR * 0.93);
+  const mouth = new Mesh(new SphereGeometry(headR * 0.10, 16, 14), dark);
+  mouth.scale.set(1.15, 0.65, 0.55);
+  mouth.position.set(0, headY - headR * 0.32, headR * 0.91);
   group.add(mouth);
 
   return group;
@@ -159,17 +161,17 @@ export function buildCat(skin: Skin): Group {
 export function buildPreviewCat(skin: Skin): Group {
   const cat = buildCat(skin);
 
-  // Add Bongo Cat-style paws for the preview (positioned in front, ready to wave)
+  // Add Bongo Cat-style paws for the preview (positioned lower and in front)
   const leftPaw = buildCatPaw(skin);
   leftPaw.name = 'left-paw';
-  leftPaw.position.set(-0.15, 0.05, 0.4);
-  leftPaw.scale.setScalar(1.2); // Slightly larger for visibility
+  leftPaw.position.set(-0.15, -0.15, 0.35); // Lower Y position
+  leftPaw.scale.setScalar(1.0);
   cat.add(leftPaw);
 
   const rightPaw = buildCatPaw(skin);
   rightPaw.name = 'right-paw';
-  rightPaw.position.set(0.15, 0.05, 0.4);
-  rightPaw.scale.setScalar(1.2);
+  rightPaw.position.set(0.15, -0.15, 0.35); // Lower Y position
+  rightPaw.scale.setScalar(1.0);
   cat.add(rightPaw);
 
   return cat;

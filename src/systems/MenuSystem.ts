@@ -259,13 +259,29 @@ export class MenuSystem extends createSystem({}) {
       this.applyState();
       return;
     }
-    if (action.kind === 'assign') {
-      loadout.slots[action.spot] = action.weapon;
+    if (action.kind === 'select') {
+      // Toggle selection: if clicking same slot, deselect; otherwise select
+      if (this.loadoutPanel.selectedSlot === action.spot) {
+        this.loadoutPanel.selectedSlot = null;
+      } else if (this.loadoutPanel.selectedSlot === null) {
+        // First selection
+        this.loadoutPanel.selectedSlot = action.spot;
+      } else {
+        // Second selection - swap weapons
+        const fromSlot = this.loadoutPanel.selectedSlot;
+        const toSlot = action.spot;
+        const temp = loadout.slots[fromSlot];
+        loadout.slots[fromSlot] = loadout.slots[toSlot];
+        loadout.slots[toSlot] = temp;
+        this.loadoutPanel.selectedSlot = null;
+        saveLoadout();
+      }
+      this.loadoutPanel.redraw();
     } else if (action.kind === 'curve') {
       loadout.curve[action.t] = !loadout.curve[action.t];
+      saveLoadout();
+      this.loadoutPanel.redraw();
     }
-    saveLoadout();
-    this.loadoutPanel.redraw();
   }
 
   private setTab(tab: CustomizeTab): void {
